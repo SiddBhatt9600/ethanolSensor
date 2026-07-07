@@ -1,5 +1,4 @@
 # 😀 ethanolSensor
-dekhte pachhi
 
 
 
