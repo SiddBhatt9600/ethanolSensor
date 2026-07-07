@@ -19,6 +19,12 @@ class HbManager:
         self._running = False
         self._thread = None
 
+    def clear_json(self):
+        filename = "sensor_history.json"
+    
+        with open(filename, "w") as f:
+            json.dump([], f, indent=4)
+
     def save_json(self, hb_value):
         filename = "hb_history.json"
 
@@ -72,6 +78,7 @@ class HbManager:
             time.sleep(HB_REQUEST_TIMEOUT)
 
     def start(self):
+        self.clear_json()
         if self._thread is None or not self._thread.is_alive():
             self._running = True
             self._thread = threading.Thread(
