@@ -1,0 +1,52 @@
+[
+    {
+        "timestamp": "2026-07-07T14:18:25.364566",
+        "heartbeat": 1,
+        "missed_hb": 0
+    },
+    {
+        "timestamp": "2026-07-07T14:18:45.375828",
+        "heartbeat": 2,
+        "missed_hb": 0
+    },
+    {
+        "timestamp": "2026-07-07T14:19:05.388091",
+        "heartbeat": 3,
+        "missed_hb": 0
+    },
+    {
+        "timestamp": "2026-07-07T14:19:25.399836",
+        "heartbeat": 4,
+        "missed_hb": 0
+    },
+    {
+        "timestamp": "2026-07-07T19:51:50.477166+05:30",
+        "heartbeat": 1,
+        "missed_hb": 0
+    },
+    {
+        "timestamp": "2026-07-07T19:52:10.485510+05:30",
+        "heartbeat": 2,
+        "missed_hb": 0
+    },
+    {
+        "timestamp": "2026-07-07T19:52:30.498141+05:30",
+        "heartbeat": 3,
+        "missed_hb": 0
+    },
+    {
+        "timestamp": "2026-07-07T19:52:50.512652+05:30",
+        "heartbeat": 4,
+        "missed_hb": 0
+    },
+    {
+        "timestamp": "2026-07-07T19:53:10.524889+05:30",
+        "heartbeat": 5,
+        "missed_hb": 0
+    },
+    {
+        "timestamp": "2026-07-07T19:53:30.537408+05:30",
+        "heartbeat": 6,
+        "missed_hb": 0
+    }
+]
