@@ -1,29 +1,116 @@
-body
-{
-    font-family:Arial;
+/* ==========================================================
+   Global
+   ========================================================== */
 
-    background:#222;
-
-    color:white;
-
-    margin:30px;
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #1f1f1f;
+    color: white;
+    margin: 30px;
 }
 
-table
-{
-    width:100%;
-
-    border-collapse:collapse;
+h1 {
+    text-align: center;
+    margin-bottom: 40px;
 }
 
-th
-{
-    background:#444;
+h2 {
+    margin-top: 40px;
+    margin-bottom: 15px;
+    color: #00d4ff;
 }
 
-td,th
-{
-    padding:10px;
+h3 {
+    margin-top: 20px;
+}
 
-    border:1px solid #555;
+/* ==========================================================
+   Tables
+   ========================================================== */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 25px;
+    background: #2c2c2c;
+}
+
+th {
+    background: #3f3f3f;
+    color: white;
+    padding: 12px;
+    border: 1px solid #555;
+}
+
+td {
+    padding: 10px;
+    border: 1px solid #555;
+    text-align: center;
+}
+
+tr:nth-child(even) {
+    background: #353535;
+}
+
+tr:hover {
+    background: #454545;
+}
+
+/* ==========================================================
+   Button Capture Section
+   ========================================================== */
+
+#captureStatus {
+    background: #2c2c2c;
+    padding: 12px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+#average {
+    background: #2c2c2c;
+    padding: 15px;
+    border-radius: 5px;
+    line-height: 1.8;
+    margin-top: 15px;
+    border-left: 5px solid #00d4ff;
+}
+
+/* ==========================================================
+   Horizontal Line
+   ========================================================== */
+
+hr {
+    margin-top: 40px;
+    margin-bottom: 40px;
+    border: none;
+    border-top: 1px solid #555;
+}
+
+/* ==========================================================
+   Mobile Responsive
+   ========================================================== */
+
+@media screen and (max-width: 768px) {
+
+    body {
+        margin: 10px;
+        font-size: 14px;
+    }
+
+    h1 {
+        font-size: 22px;
+    }
+
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    th,
+    td {
+        padding: 8px;
+        font-size: 13px;
+    }
 }

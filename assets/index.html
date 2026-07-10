@@ -1,46 +1,97 @@
 <!DOCTYPE html>
-
-<html>
+<html lang="en">
 
 <head>
 
-<title>Fuel Monitor</title>
+    <meta charset="UTF-8">
 
-<link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Fuel Quality Dashboard</title>
+
+    <link rel="stylesheet" href="style.css">
 
 </head>
 
 <body>
 
-<h1>Fuel Quality Dashboard</h1>
+    <h1>Fuel Quality Dashboard</h1>
 
-<table id="sensorTable">
+    <!-- ===================================================== -->
+    <!-- Live Sensor Section                                   -->
+    <!-- ===================================================== -->
 
-<thead>
+    <h2>Live Sensor Data (Last 10 Readings)</h2>
 
-<tr>
+    <div id="liveStatus">
+        Waiting for first sensor reading...
+    </div>
 
-<th>Time</th>
+    <table id="sensorTable">
 
-<th>Ethanol</th>
+        <thead>
 
-<th>Temperature</th>
+            <tr>
 
-<th>Density</th>
+                <th>Timestamp</th>
+                <th>Temperature (°C)</th>
+                <th>Ethanol (%)</th>
+                <th>Density</th>
+                <th>Water</th>
+                <th>Turbidity</th>
 
-<th>Water</th>
+            </tr>
 
-</tr>
+        </thead>
 
-</thead>
+        <tbody>
 
-<tbody>
+        </tbody>
 
-</tbody>
+    </table>
 
-</table>
+    <hr>
 
-<script src="app.js"></script>
+    <!-- ===================================================== -->
+    <!-- Button Capture Section                                -->
+    <!-- ===================================================== -->
+
+    <h2>Button Capture</h2>
+
+    <div id="captureStatus">
+        Press the button to record the average of the next 5 readings.
+    </div>
+
+    <table id="captureTable">
+
+        <thead>
+
+            <tr>
+
+                <th>Sample</th>
+                <th>Temperature</th>
+                <th>Ethanol</th>
+                <th>Density</th>
+                <th>Water</th>
+                <th>Turbidity</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+        </tbody>
+
+    </table>
+
+    <h3>Average Values</h3>
+
+    <div id="average">
+
+    </div>
+
+    <script src="app.js"></script>
 
 </body>
 

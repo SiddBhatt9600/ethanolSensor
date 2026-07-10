@@ -5,10 +5,14 @@
 
 // ModulinoMovement movement;
 static int hbCounter = 0;
+bool lastState = LOW;
+constexpr int buttonPin = 2;
 float x_accel, y_accel, z_accel; // Accelerometer values in g
 
 void setup() {
   // put your setup code here, to run once:
+  pinMode(buttonPin, INPUT);
+  Serial.begin(9600);
   Bridge.begin();
   randomSeed(analogRead(A0)); 
   Bridge.provide_safe("getHbState", getHbState);
@@ -64,19 +68,27 @@ float getdensity() {
   return densityVal;
 }
 
-// Only for IMU, accleration measurement
+// Only for IMU, accleration measurement and button press
 void loop() {
-  float randomFloat = random(0, 1000001) / 1000000.0;
-  // has_movement = movement.update();
-    if(1) {
-      // Get acceleration values
+  bool currentState = digitalRead(buttonPin);
+  if (currentState == HIGH && lastState == LOW) {
+    Serial.println("Button Pressed, recording sensor values");
 
-      // Change the values later
-      x_accel = randomFloat;
-      y_accel = randomFloat;
-      z_accel = randomFloat;
+    Bridge.notify("record_sensor_values");
+  }
+  lastState = currentState;
+  
+  // float randomFloat = random(0, 1000001) / 1000000.0;
+  // // has_movement = movement.update();
+  //   if(1) {
+  //     // Get acceleration values
+
+  //     // Change the values later
+  //     x_accel = randomFloat;
+  //     y_accel = randomFloat;
+  //     z_accel = randomFloat;
     
-      Bridge.notify("record_sensor_movement", x_accel, y_accel, z_accel);
-    }
-    delay(100);
+  //     Bridge.notify("record_sensor_movement", x_accel, y_accel, z_accel);
+  //   }
+  //   delay(100);
 }
