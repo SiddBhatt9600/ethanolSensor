@@ -5,6 +5,7 @@ import json
 
 from hbManager import HbManager
 from sensorManager import SensorManager
+from aiManager import AiManager
 
 ###############################################################
 # Logger / Bridge
@@ -22,6 +23,9 @@ hbManager.start()
 
 sensorManager = SensorManager(bridge, logger)
 sensorManager.start()
+
+aiManager = AiManager(sensorManager, logger)
+aiManager.start()
 
 ###############################################################
 # WebUI
@@ -43,8 +47,34 @@ def get_button_capture():
     """
     return sensorManager.get_latest_capture()
 
+def get_ai_verdicts():
+    """
+    Returns the latest 10 continuous AI verdicts.
+    """
+    return aiManager.get_latest_verdicts()
+
+
+def get_current_verdict():
+    """
+    Returns the most recent AI verdict (status card).
+    """
+    return aiManager.get_current_verdict()
+
+
+def get_capture_verdict():
+    """
+    Runs the model on the latest button capture average.
+    """
+    return aiManager.infer_capture(
+        sensorManager.get_latest_capture()
+    )
+
+
 ui.expose_api("GET", "/api/sensors", get_sensor_data)
 ui.expose_api("GET", "/api/button_capture", get_button_capture)
+ui.expose_api("GET", "/api/ai/verdicts", get_ai_verdicts)
+ui.expose_api("GET", "/api/ai/current", get_current_verdict)
+ui.expose_api("GET", "/api/ai/capture_verdict", get_capture_verdict)
 
 ###############################################################
 # Bridge callback

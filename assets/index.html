@@ -18,6 +18,54 @@
     <h1>Fuel Quality Dashboard</h1>
 
     <!-- ===================================================== -->
+    <!-- AI Verdict Section                                    -->
+    <!-- ===================================================== -->
+
+    <h2>AI Fuel Quality Verdict</h2>
+
+    <div id="aiCard" class="verdict-unknown">
+
+        <div id="aiVerdict">WAITING…</div>
+
+        <div id="aiConfidence"></div>
+
+        <div id="aiProbs"></div>
+
+    </div>
+
+    <div id="aiSignals"></div>
+
+    <div id="aiAnomalies"></div>
+
+    <h3>Verdict History (Last 10)</h3>
+
+    <table id="aiTable">
+
+        <thead>
+
+            <tr>
+
+                <th>Timestamp</th>
+                <th>Verdict</th>
+                <th>Confidence</th>
+                <th>Density @15°C</th>
+                <th>Expected</th>
+                <th>Residual</th>
+                <th>Anomalies</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+        </tbody>
+
+    </table>
+
+    <hr>
+
+    <!-- ===================================================== -->
     <!-- Live Sensor Section                                   -->
     <!-- ===================================================== -->
 
@@ -88,6 +136,16 @@
     <h3>Average Values</h3>
 
     <div id="average">
+
+    </div>
+
+    <h3>AI Spot Check</h3>
+
+    <button id="analyzeBtn" onclick="analyzeCapture()">
+        Analyze Latest Capture
+    </button>
+
+    <div id="captureVerdict">
 
     </div>
 

@@ -77,6 +77,106 @@ tr:hover {
 }
 
 /* ==========================================================
+   AI Verdict Section
+   ========================================================== */
+
+#aiCard {
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+#aiVerdict {
+    font-size: 34px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+#aiConfidence {
+    font-size: 16px;
+    margin-bottom: 6px;
+}
+
+#aiProbs {
+    font-size: 13px;
+    opacity: 0.85;
+}
+
+.verdict-good {
+    background: #123a1c;
+    border: 2px solid #2ecc71;
+}
+
+.verdict-suspect {
+    background: #3a3212;
+    border: 2px solid #f1c40f;
+}
+
+.verdict-bad {
+    background: #3a1212;
+    border: 2px solid #e74c3c;
+}
+
+.verdict-unknown {
+    background: #2c2c2c;
+    border: 2px solid #777;
+}
+
+.verdict-good-text    { color: #2ecc71; font-weight: bold; }
+.verdict-suspect-text { color: #f1c40f; font-weight: bold; }
+.verdict-bad-text     { color: #e74c3c; font-weight: bold; }
+.verdict-unknown-text { color: #aaa; }
+
+#aiTable {
+    display: none;
+}
+
+#aiSignals {
+    background: #2c2c2c;
+    padding: 12px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    line-height: 1.6;
+    border-left: 5px solid #00d4ff;
+}
+
+#aiAnomalies {
+    display: none;
+    background: #3a1212;
+    border: 1px solid #e74c3c;
+    padding: 12px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+#analyzeBtn {
+    background: #00d4ff;
+    color: #1f1f1f;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 15px;
+}
+
+#analyzeBtn:hover {
+    background: #33ddff;
+}
+
+#captureVerdict {
+    display: none;
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 5px;
+    line-height: 1.6;
+}
+
+/* ==========================================================
    Horizontal Line
    ========================================================== */
 
