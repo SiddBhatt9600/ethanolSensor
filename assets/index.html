@@ -7,7 +7,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Fuel Quality Dashboard</title>
+    <title>Fuel Quality Monitoring System</title>
 
     <link rel="stylesheet" href="style.css">
 
@@ -15,83 +15,216 @@
 
 <body>
 
-    <h1>Fuel Quality Dashboard</h1>
+<header>
 
-    <!-- ===================================================== -->
-    <!-- Live Sensor Section                                   -->
-    <!-- ===================================================== -->
+    <h1>Fuel Quality Monitoring System</h1>
 
-    <h2>Live Sensor Data (Last 10 Readings)</h2>
+    <div id="connectionBar">
 
-    <div id="liveStatus">
-        Waiting for first sensor reading...
-    </div>
+        <span id="connectionStatus">
+            ● Connected
+        </span>
 
-    <table id="sensorTable">
+        <span id="heartbeatValue">
+            HB : --
+        </span>
 
-        <thead>
-
-            <tr>
-
-                <th>Timestamp</th>
-                <th>Temperature (°C)</th>
-                <th>Ethanol (%)</th>
-                <th>Density</th>
-                <th>Water</th>
-                <th>Turbidity</th>
-
-            </tr>
-
-        </thead>
-
-        <tbody>
-
-        </tbody>
-
-    </table>
-
-    <hr>
-
-    <!-- ===================================================== -->
-    <!-- Button Capture Section                                -->
-    <!-- ===================================================== -->
-
-    <h2>Button Capture</h2>
-
-    <div id="captureStatus">
-        Press the button to record the average of the next 5 readings.
-    </div>
-
-    <table id="captureTable">
-
-        <thead>
-
-            <tr>
-
-                <th>Sample</th>
-                <th>Temperature</th>
-                <th>Ethanol</th>
-                <th>Density</th>
-                <th>Water</th>
-                <th>Turbidity</th>
-
-            </tr>
-
-        </thead>
-
-        <tbody>
-
-        </tbody>
-
-    </table>
-
-    <h3>Average Values</h3>
-
-    <div id="average">
+        <span id="lastUpdate">
+            Last Update : --
+        </span>
 
     </div>
 
-    <script src="app.js"></script>
+</header>
+
+
+<!-- ===================================================== -->
+<!-- LIVE STATUS CARDS                                     -->
+<!-- ===================================================== -->
+
+<section class="cardContainer">
+
+    <div class="card">
+
+        <h3>Ethanol</h3>
+
+        <div class="value" id="ethanolValue">-- %</div>
+
+    </div>
+
+    <div class="card">
+
+        <h3>Fuel Temp</h3>
+
+        <div class="value" id="temperatureValue">-- °C</div>
+
+    </div>
+
+    <div class="card">
+
+        <h3>Density</h3>
+
+        <div class="value" id="densityValue">--</div>
+
+    </div>
+
+    <div class="card">
+
+        <h3>Water In Fuel</h3>
+
+        <div class="value" id="waterValue">--</div>
+
+    </div>
+
+    <div class="card">
+
+        <h3>Turbidity</h3>
+
+        <div class="value" id="turbidityValue">--</div>
+
+    </div>
+
+</section>
+
+
+<!-- ===================================================== -->
+<!-- IMU                                                    -->
+<!-- ===================================================== -->
+
+<section class="imuSection">
+
+    <h2>Live Accelerometer</h2>
+
+    <canvas id="accelChart"></canvas>
+
+</section>
+
+<section class="imuSection">
+
+    <h2>Live Gyroscope</h2>
+
+    <canvas id="gyroChart"></canvas>
+
+</section>
+
+
+<!-- ===================================================== -->
+<!-- TABLES                                                 -->
+<!-- ===================================================== -->
+
+<div class="tableWrapper">
+
+    <div class="tablePanel">
+
+        <h2>Live Sensor History</h2>
+
+        <div id="liveStatus">
+            Waiting for first sensor reading...
+        </div>
+
+        <table id="sensorTable">
+
+            <thead>
+
+                <tr>
+
+                    <th>Timestamp</th>
+
+                    <th>Temp</th>
+
+                    <th>Ethanol</th>
+
+                    <th>Density</th>
+
+                    <th>Water</th>
+
+                    <th>Turbidity</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+
+    <div class="tablePanel">
+
+        <h2>Button Capture</h2>
+
+        <div id="captureStatus">
+
+            Press the button to record the average of the next 5 readings.
+
+        </div>
+
+        <table id="captureTable">
+
+            <thead>
+
+                <tr>
+
+                    <th>#</th>
+
+                    <th>Temp</th>
+
+                    <th>Ethanol</th>
+
+                    <th>Density</th>
+
+                    <th>Water</th>
+
+                    <th>Turbidity</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+            </tbody>
+
+        </table>
+
+        <h3>Average</h3>
+
+        <div id="average">
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ===================================================== -->
+<!-- EVENT LOG                                              -->
+<!-- ===================================================== -->
+
+<section class="eventSection">
+
+    <h2>System Events</h2>
+
+    <div id="eventLog">
+
+        System started...
+
+    </div>
+
+</section>
+
+
+<!-- ===================================================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="app.js"></script>
 
 </body>
 
