@@ -126,33 +126,23 @@ int getHbState() {
 }
 
 int getFuelTemp() {
-  int randomFloat = random(20, 70);
-  int fuelTemp = randomFloat;
-  return fuelTemp;
+  return random(20, 70);
 }
 
 int getethanolPercentage() {
-  int randomFloat = random(0, 100);
-  int ehtPer = randomFloat;
-  return ehtPer;
+  return random(0, 100);
 }
 
 int getwif() {
-  int randomFloat = random(0, 100);
-  int wifVal = randomFloat;
-  return wifVal;
+  return random(0, 100);
 }
 
 int getturbidity() {
-  int randomFloat = random(0, 100);
-  int turbidityVal = randomFloat;
-  return turbidityVal;
+  return random(0, 100);
 }
 
 float getdensity() {
-  float randomFloat = random(700000, 800000) / 1000.0;
-  float densityVal = randomFloat;
-  return densityVal;
+  return random(700000, 800000) / 1000.0;
 }
 
 
