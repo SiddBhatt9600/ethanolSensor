@@ -3,6 +3,7 @@ import os
 import threading
 import time
 import statistics
+import math
 import zoneinfo
 from datetime import datetime
 
@@ -68,78 +69,42 @@ class SensorManager:
 
     ###########################################################
 
-    def save_history(self, reading):
+    def save_history(self):
 
-        filename = "sensor_history.json"
+        self.history_cache = self.history_cache[-MAX_SENSOR_RECORDS:]
 
-        history = []
+        with open("sensor_history.json", "w") as fp:
 
-        if os.path.exists(filename):
-
-            try:
-
-                with open(filename, "r") as fp:
-
-                    history = json.load(fp)
-
-            except Exception:
-
-                history = []
-
-        history.append(reading)
-
-        history = history[-MAX_SENSOR_RECORDS:]
-
-        with open(filename, "w") as fp:
-
-            json.dump(history, fp, indent=4)
+            json.dump(
+                self.history_cache,
+                fp,
+                indent=4
+            )
 
     ###########################################################
+    
+    def average(self, key):
+
+        values = [
+
+            x[key]
+
+            for x in self.capture_samples
+
+            if x[key] is not None
+
+        ]
+
+        if not values:
+
+            return None
+
+        return round(
+            statistics.mean(values),
+            2
+        )
 
     def save_capture(self):
-
-        avg = {
-
-            "temp":
-            round(
-                statistics.mean(
-                    x["temp"] for x in self.capture_samples
-                ),
-                2
-            ),
-
-            "ethanol":
-            round(
-                statistics.mean(
-                    x["ethanol"] for x in self.capture_samples
-                ),
-                2
-            ),
-
-            "wif":
-            round(
-                statistics.mean(
-                    x["wif"] for x in self.capture_samples
-                ),
-                2
-            ),
-
-            "turbidity":
-            round(
-                statistics.mean(
-                    x["turbidity"] for x in self.capture_samples
-                ),
-                2
-            ),
-
-            "density":
-            round(
-                statistics.mean(
-                    x["density"] for x in self.capture_samples
-                ),
-                2
-            )
-        }
 
         output = {
 
@@ -147,18 +112,49 @@ class SensorManager:
 
             "samples": self.capture_samples,
 
-            "average": avg
+            "average": {
+
+                "temp":
+                self.average("temp"),
+
+                "ethanol":
+                self.average("ethanol"),
+
+                "wif":
+                self.average("wif"),
+
+                "turbidity":
+                self.average("turbidity"),
+
+                "density":
+                self.average("density")
+
+            }
+
         }
 
-        with open("sensor_history_button.json", "w") as fp:
+        with open(
+            "sensor_history_button.json",
+            "w"
+        ) as fp:
 
-            json.dump(output, fp, indent=4)
+            json.dump(
+                output,
+                fp,
+                indent=4
+            )
 
     ###########################################################
     #
     # Sensor Reading
     #
     ###########################################################
+
+    def sanitize(self, value):
+        if isinstance(value, float):
+            if math.isnan(value) or math.isinf(value):
+                return None
+        return value
 
     def readSensors(self):
 
@@ -169,21 +165,31 @@ class SensorManager:
                 "timestamp": self._timestamp(),
 
                 "temp":
-                self.bridge.call("getFuelTemp"),
+                self.sanitize(
+                    self.bridge.call("readDS18B20TempC")
+                ),
 
                 "ethanol":
-                self.bridge.call("getethanolPercentage"),
+                self.sanitize(
+                    self.bridge.call("getethanolPercentage")
+                ),
 
                 "wif":
-                self.bridge.call("getwif"),
+                self.sanitize(
+                    self.bridge.call("getwif")
+                ),
 
                 "turbidity":
-                self.bridge.call("getturbidity"),
+                self.sanitize(
+                    self.bridge.call("readTurbidityRaw")
+                ),
 
                 "density":
-                round(
-                    self.bridge.call("getdensity"),
-                    2
+                self.sanitize(
+                    round(
+                        self.bridge.call("getdensity"),
+                        2
+                    )
                 )
             }
 
@@ -206,14 +212,62 @@ class SensorManager:
         if reading is None:
             return
 
+        ##################################################
+        # Continuous History
+        ##################################################
+
         self.history_cache.append(reading)
 
-        self.history_cache = self.history_cache[-MAX_SENSOR_RECORDS:]
+        self.history_cache = self.history_cache[
+            -MAX_SENSOR_RECORDS:
+        ]
 
-        self.save_history(reading)
+        self.save_history()
+
+        ##################################################
+        # Button Capture
+        ##################################################
+
+        with self._lock:
+
+            if self.capture_pending:
+
+                self.capture_samples.append(reading)
+
+                self.logger.info(
+
+                    f"Capture Sample "
+
+                    f"{len(self.capture_samples)}/"
+
+                    f"{CAPTURE_SAMPLE_COUNT}"
+
+                )
+
+                if (
+
+                    len(self.capture_samples)
+
+                    >=
+
+                    CAPTURE_SAMPLE_COUNT
+
+                ):
+
+                    self.save_capture()
+
+                    self.capture_pending = False
+
+                    self.capture_samples = []
+
+                    self.logger.info(
+                        "Capture Completed."
+                    )
 
         self.logger.info(
+
             f"Continuous Reading : {reading}"
+
         )
 
     ###########################################################
@@ -226,50 +280,28 @@ class SensorManager:
 
         with self._lock:
 
-            #
-            # Already recording?
-            #
-            if self.capture_active:
+            if self.capture_pending:
 
                 self.logger.info(
-                    "Capture already running."
+                    "Capture already pending."
                 )
 
                 return False
 
-            #
-            # Less than five readings?
-            #
-            if len(self.history_cache) < 5:
+            self.logger.info(
+                "Button pressed. Waiting for next "
+                f"{CAPTURE_SAMPLE_COUNT} continuous readings."
+            )
 
-                self.capture_pending = True
-
-                self.logger.info(
-                    "Capture queued until 5 continuous readings are available."
-                )
-
-                return True
-
-            #
-            # Fresh capture
-            #
             self.clear_button_json()
 
             self.capture_samples = []
 
-            self.capture_active = True
-
-            self.next_capture = time.time()
-
-            self.logger.info(
-                "Capture Started."
-            )
+            self.capture_pending = True
 
             return True
 
-    #####################################################
-
-        ###########################################################
+    ###########################################################
     #
     # Worker Thread
     #
@@ -281,82 +313,17 @@ class SensorManager:
 
             now = time.time()
 
-            ###################################################
-            # Continuous Logging
-            ###################################################
-
             if now >= self.next_continuous:
 
                 self.log_continuous()
 
-                self.next_continuous = now + CONTINUOUS_INTERVAL
+                self.next_continuous = (
 
-            ###################################################
-            # Queued Capture
-            ###################################################
+                    now +
 
-            with self._lock:
+                    CONTINUOUS_INTERVAL
 
-                if (
-                    self.capture_pending and
-                    len(self.history_cache) >= 5
-                ):
-
-                    self.logger.info(
-                        "Queued capture started."
-                    )
-
-                    self.capture_pending = False
-
-                    self.capture_active = True
-
-                    self.capture_samples = []
-
-                    self.clear_button_json()
-
-                    self.next_capture = now
-
-            ###################################################
-            # Capture Scheduler
-            ###################################################
-
-            with self._lock:
-
-                capture_running = self.capture_active
-
-            if capture_running and now >= self.next_capture:
-
-                reading = self.readSensors()
-
-                if reading is not None:
-
-                    self.capture_samples.append(reading)
-
-                    self.logger.info(
-
-                        f"Capture Sample "
-                        f"{len(self.capture_samples)}/"
-                        f"{CAPTURE_SAMPLE_COUNT}"
-
-                    )
-
-                    self.next_capture = now + CAPTURE_INTERVAL
-
-                    if len(self.capture_samples) >= CAPTURE_SAMPLE_COUNT:
-
-                        self.save_capture()
-
-                        with self._lock:
-
-                            self.capture_active = False
-
-                            self.capture_pending = False
-
-                        self.logger.info(
-                            "Capture Completed."
-                        )
-
-            ###################################################
+                )
 
             time.sleep(0.25)
 
@@ -368,40 +335,54 @@ class SensorManager:
 
     def start(self):
 
-        if self._running:
-            return
+        ##################################################
+        # Load previous history if available
+        ##################################################
 
-        self.history_cache.clear()
+        if os.path.exists("sensor_history.json"):
 
-        self.capture_samples.clear()
+            try:
 
-        self.capture_active = False
-        self.capture_pending = False
+                with open("sensor_history.json", "r") as fp:
 
-        with open("sensor_history.json", "w") as fp:
-            json.dump([], fp, indent=4)
+                    self.history_cache = json.load(fp)
+
+            except Exception as e:
+
+                self.logger.warning(
+                    f"Failed to load previous history: {e}"
+                )
+
+                self.history_cache = []
+
+        else:
+
+            self.history_cache = []
+
+        ##################################################
+        # Reset button capture only
+        ##################################################
 
         self.clear_button_json()
+
+        self.capture_pending = False
+        self.capture_samples = []
+
+        ##################################################
+        # Start worker
+        ##################################################
 
         self._running = True
 
         self.next_continuous = time.time()
 
         self._thread = threading.Thread(
-
             target=self._worker,
-
-            name="SensorManager",
-
-            daemon=True
-
+            daemon=True,
+            name="SensorManager"
         )
 
         self._thread.start()
-
-        self.logger.info(
-            "SensorManager Started."
-        )
 
     ###########################################################
 
