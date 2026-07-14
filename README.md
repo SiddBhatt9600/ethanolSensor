@@ -1,80 +1,120 @@
-# Ethanol Sensor Data Acquisition Framework
+# Fuel Quality Monitoring System
 
-An Arduino UNO Q based sensor acquisition framework for monitoring fuel quality and system health using the Arduino Router/Bridge RPC framework.
+A modular fuel quality monitoring and vehicle telemetry framework built on the **Arduino UNO Q**, leveraging the dual-processor architecture of the Qualcomm Dragonwing QRB2210 MPU (Debian Linux) and the STM32U585 MCU (Zephyr/Arduino).
 
-The project demonstrates communication between the Qualcomm QRB2210 MPU (Debian Linux) and the STM32U585 MCU through the Arduino Bridge API. The MCU exposes sensor APIs over RPC while the Linux application periodically polls the data, stores it as JSON and prepares it for higher-level processing.
+The project demonstrates a production-style architecture where the MCU performs real-time sensor acquisition while the Linux MPU handles data logging, visualization, analytics, and external communication through the Arduino Router/Bridge RPC framework.
 
 ---
 
-## Architecture
+# Features
+
+## Fuel Quality Monitoring
+
+- Fuel Temperature
+- Ethanol Percentage
+- Fuel Density
+- Water-In-Fuel (WIF)
+- Turbidity
+
+## Vehicle Telemetry
+
+- BMI323 6-DoF IMU
+- 100 Hz Accelerometer Sampling
+- 100 Hz Gyroscope Sampling
+- Live IMU Dashboard
+- Circular 30-minute IMU Buffer
+- Background IMU Logging
+
+## System Monitoring
+
+- Heartbeat Monitoring
+- Missed Heartbeat Detection
+- Background Health Monitoring
+- JSON Persistent Logging
+
+## User Interface
+
+- Responsive Web Dashboard
+- Live Sensor Cards
+- Live Accelerometer Graph
+- Live Gyroscope Graph
+- Historical Sensor Table
+- Button Capture Panel
+- Mobile Friendly
+
+## Dashboard
+
+![Dashboard](docs/dashboard.png)
+
+---
+
+# System Architecture
 
 ```
-                        +-------------------------+
-                        |      Mobile / Cloud     |
-                        +------------+------------+
-                                     |
-                                     |
-                          Future BLE / MQTT / REST
-                                     |
-                                     |
-                    +----------------v----------------+
-                    |      Debian Linux (MPU)         |
-                    |---------------------------------|
-                    | Python Application              |
-                    |                                 |
-                    | HbManager                       |
-                    | SensorManager                   |
-                    | AiManager (fuel quality MLP +   |
-                    |            drift detection)     |
-                    | JSON Logger                     |
-                    | Web Dashboard + REST APIs       |
-                    +----------------+----------------+
-                                     |
-                           Arduino Router / Bridge
-                                     |
-                           MessagePack RPC
-                                     |
-                    +----------------v----------------+
-                    |        STM32U585 (MCU)          |
-                    |---------------------------------|
-                    | Bridge.provide_safe() APIs      |
-                    |                                 |
-                    | Heartbeat                       |
-                    | Fuel Temperature                |
-                    | Ethanol Percentage              |
-                    | Water In Fuel                   |
-                    | Turbidity                       |
-                    | Density                         |
-                    +---------------------------------+
+                    +-----------------------------------+
+                    |         Mobile Browser            |
+                    |     Live Dashboard (Chart.js)     |
+                    +-----------------+-----------------+
+                                      |
+                                      |
+                                 REST APIs
+                               WebSocket (IMU)
+                                      |
+                                      |
+                    +-----------------v-----------------+
+                    |        Debian Linux (MPU)          |
+                    |------------------------------------|
+                    | main.py                            |
+                    |                                    |
+                    | HbManager                          |
+                    | SensorManager                      |
+                    | ImuManager                         |
+                    | AiManager (fuel quality MLP +      |
+                    |            drift detection)        |
+                    | WebUI                              |
+                    | JSON Logger                        |
+                    +-----------------+------------------+
+                                      |
+                        Arduino Router / Bridge RPC
+                           MessagePack over UART
+                                      |
+                    +-----------------v-----------------+
+                    |         STM32U585 (MCU)           |
+                    |-----------------------------------|
+                    | Sensor Acquisition                |
+                    | BMI323 IMU                        |
+                    | Button Monitoring                 |
+                    | Bridge.provide_safe() APIs        |
+                    +-----------------------------------+
 ```
 
 ---
 
-## Current Features
+# Software Architecture
 
-- Heartbeat monitoring
-- Fuel temperature acquisition
-- Ethanol percentage acquisition
-- Water-In-Fuel (WIF) acquisition
-- Turbidity acquisition
-- Density acquisition
-- Background polling using Python threads
-- JSON based persistent logging
-- Sliding window logging (1000 records)
-- **AI fuel quality classification** (GOOD / SUSPECT / ADULTERATED)
-  with confidence, probabilities and plain-language explanations
-- **Physics-based feature engineering**: density is temperature
-  corrected to 15 °C and compared against the density physics
-  predicts for the measured ethanol % — the residual exposes
-  kerosene / solvent dilution that no single raw sensor shows
-- **Refuel-drift anomaly detection** (rolling z-score over the
-  last 30 readings per parameter)
-- Web dashboard with live AI verdict card, verdict history and
-  on-demand analysis of button captures
+```
+main.py
+
+│
+
+├── HbManager
+
+├── SensorManager
+
+├── ImuManager
+
+├── AiManager
+
+├── WebUI
+
+└── Arduino Bridge
+```
+
+Each manager is responsible for its own acquisition, buffering, logging and REST APIs.
 
 ---
 
-## Repository Structure
+# Repository Structure
 
 ```
 .
@@ -82,6 +122,7 @@ The project demonstrates communication between the Qualcomm QRB2210 MPU (Debian 
 │   ├── main.py              app entry: managers + REST APIs
 │   ├── hbManager.py         heartbeat monitor
 │   ├── sensorManager.py     sensor polling + button capture
+│   ├── imuManager.py        BMI323 IMU buffering + streaming
 │   ├── aiManager.py         AI worker thread + drift detection
 │   ├── fuelQualityModel.py  numpy MLP inference + explanations
 │   ├── features.py          shared feature engineering (train==serve)
@@ -103,117 +144,82 @@ The project demonstrates communication between the Qualcomm QRB2210 MPU (Debian 
 │
 ├── AI_PLAN.md               AI layer plan & status
 ├── INTEGRATION.md           AI integration notes
-├── hb_history.json
+│
 ├── sensor_history.json
+├── sensor_history_button.json
+├── hb_history.json
+├── imu_history.json
+│
 ├── app.yaml
 └── README.md
 ```
 
 ---
 
-## Components
+# Managers
 
-### Arduino Sketch
+## HbManager
 
-The MCU exposes RPC endpoints using the Arduino Bridge library.
+Responsibilities
 
-Current RPC methods:
+- Heartbeat polling
+- Heartbeat monitoring
+- Missed heartbeat detection
+- JSON logging
+- Rolling heartbeat history
 
-| Function | Description |
-|----------|-------------|
-| getHbState | Returns heartbeat counter |
-| getFuelTemp | Returns fuel temperature |
-| getethanolPercentage | Returns ethanol percentage |
-| getwif | Returns Water-In-Fuel value |
-| getturbidity | Returns turbidity value |
-| getdensity | Returns fuel density |
-
-Currently these APIs return simulated values for software development and integration.
-
----
-
-### HbManager
-
-Responsibilities:
-
-- Periodically requests heartbeat from MCU
-- Detects missed heartbeats
-- Logs heartbeat history
-- Maintains last known heartbeat
-- Stores latest 1000 records
-
-Output:
+Output
 
 ```
 hb_history.json
 ```
 
-Example:
-
-```json
-{
-    "timestamp": "...",
-    "heartbeat": 123,
-    "missed_hb": 0
-}
-```
-
 ---
 
-### SensorManager
+## SensorManager
 
-Responsibilities:
+Responsibilities
 
-- Reads all available fuel sensor values
-- Maintains in-memory sensor cache
-- Logs sensor data periodically
-- Stores latest 1000 samples
+- Polls all fuel sensors every 10 seconds
+- Stores latest readings
+- Rolling sensor history
+- Button-triggered sensor capture
+- Calculates average of five samples
+- Persistent JSON logging
 
-Sensors:
-
-- Fuel Temperature
-- Ethanol Percentage
-- Water-In-Fuel
-- Turbidity
-- Density
-
-Output:
+Outputs
 
 ```
 sensor_history.json
+
+sensor_history_button.json
 ```
 
 ---
 
-## Current Communication Flow
+## ImuManager
+
+Responsibilities
+
+- Receives live BMI323 data over Bridge RPC
+- Stores samples in a circular RAM buffer
+- Maintains last 30 minutes of data
+- Periodically flushes to JSON
+- Live WebSocket streaming
+- Statistics generation
+- Historical retrieval
+
+Output
 
 ```
-STM32
-
-Bridge.provide_safe()
-
-↓
-
-Arduino Router
-
-↓
-
-Python Bridge.call()
-
-↓
-
-HbManager / SensorManager
-
-↓
-
-JSON Logger
+imu_history.json
 ```
 
 ---
 
-### AiManager (AI Layer)
+## AiManager (AI Layer)
 
-Responsibilities:
+Responsibilities
 
 - Scores every continuous reading with a 435-parameter MLP
   (GOOD / SUSPECT / ADULTERATED) in <1 ms, numpy only
@@ -224,15 +230,7 @@ Responsibilities:
 - Plain-language explanations for the dashboard / app UI
 - On-demand scoring of button captures
 
-REST endpoints (exposed via the WebUI brick):
-
-| Endpoint | Description |
-|----------|-------------|
-| /api/ai/current | Latest verdict (status card) |
-| /api/ai/verdicts | Last 10 verdicts |
-| /api/ai/capture_verdict | Scores the latest button capture |
-
-Output:
+Output
 
 ```
 ai_history.json
@@ -245,7 +243,92 @@ Retraining on real calibration data takes seconds:
 
 ---
 
-## Testing
+# Bridge RPC APIs
+
+## MCU → Linux
+
+| RPC Method | Description |
+|------------|-------------|
+| record_sensor_values | Trigger button capture |
+| record_imu_values | Send IMU sample |
+
+---
+
+## Linux → MCU
+
+| RPC Method | Description |
+|------------|-------------|
+| getHbState | Heartbeat |
+| getFuelTemp | Fuel Temperature |
+| getethanolPercentage | Ethanol Percentage |
+| getwif | Water In Fuel |
+| getturbidity | Turbidity |
+| getdensity | Fuel Density |
+
+---
+
+# REST APIs
+
+| Endpoint | Description |
+|----------|-------------|
+| /api/sensors | Last 10 fuel sensor readings |
+| /api/button_capture | Latest button capture |
+| /api/imu_capture | Latest IMU samples |
+| /api/imu_history | Last 30 minutes of IMU data |
+| /api/imu_statistics | IMU statistics |
+| /api/heartbeat | Heartbeat status |
+| /api/ai/current | Latest AI verdict (status card) |
+| /api/ai/verdicts | Last 10 AI verdicts |
+| /api/ai/capture_verdict | AI score of the latest button capture |
+
+---
+
+# Web Dashboard
+
+The dashboard is served directly from the Arduino UNO Q and includes:
+
+- AI fuel quality verdict card with confidence and explanations
+- AI verdict history with density-physics breakdown
+- Drift / refuel anomaly alerts
+- AI spot check of button captures
+- Live connection status
+- Heartbeat monitor
+- Fuel quality cards
+- Live accelerometer chart
+- Live gyroscope chart
+- Live sensor history
+- Button capture history
+- Averaged sensor values
+- Event log
+
+The dashboard is responsive and can be accessed from desktop and mobile devices connected to the same network.
+
+---
+
+# Current Status
+
+## Implemented
+
+- Arduino Router / Bridge RPC
+- Modular manager architecture
+- Heartbeat monitoring
+- Fuel sensor acquisition
+- BMI323 integration
+- Circular IMU buffer
+- AI fuel quality classification (94.2% test accuracy)
+- Refuel-drift anomaly detection
+- Offline AI test suite + board-free full-stack demo
+- JSON persistence
+- Web Dashboard
+- Chart.js visualization
+- Mobile dashboard
+- REST APIs
+- Background workers
+- Thread-safe acquisition
+
+---
+
+# Testing
 
 Offline AI test suite (needs only numpy):
 
@@ -264,55 +347,41 @@ python3 local_demo.py
 
 ---
 
-## Technologies Used
+# Planned Features
+
+- MQTT publishing
+- BLE companion application
+- OTA firmware updates
+- Driver behavior scoring from IMU
+- Crash detection
+- Vehicle tilt detection
+- Harsh braking detection
+- Road roughness estimation
+- Sensor calibration
+- Data export (CSV/JSON)
+- Historical playback
+- Cloud synchronization
+
+---
+
+# Technologies
 
 - Arduino UNO Q
-- Arduino Router / Bridge
-- Python 3
-- MessagePack RPC
+- Qualcomm Dragonwing QRB2210
+- STM32U585
 - Debian Linux
+- Arduino Router / Bridge
+- MessagePack RPC
+- Python 3
+- HTML5
+- CSS3
+- JavaScript
+- Chart.js
 - JSON
 - Multithreading
 
 ---
 
-## Current Status
-
-Implemented
-
-- Heartbeat monitoring
-- RPC communication
-- Sensor polling
-- Background worker threads
-- JSON logging
-- Rolling log buffer
-
-Work In Progress
-
-- Actual sensor integration
-- IMU support
-- BLE interface
-- Mobile application
-- Health monitoring
-- Recovery mechanism
-- Diagnostics
-
----
-
-## Future Improvements
-
-- Replace polling with event-driven architecture
-- Introduce central Event Queue
-- Sensor abstraction layer
-- Cloud synchronization
-- Sensor calibration
-- Automatic recovery on MCU timeout
-- Web dashboard
-- Data visualization
-- Historical analytics
-
----
-
-## License
+# License
 
 MIT License
