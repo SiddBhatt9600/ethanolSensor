@@ -25,6 +25,7 @@ fills quickly. On the board the real cadence applies.
 """
 
 import json
+import math
 import os
 import random
 import sys
@@ -208,6 +209,28 @@ class DemoHandler(BaseHTTPRequestHandler):
         if path == "/api/ai/capture_verdict":
             return self._json(ai_manager.infer_capture(
                 sensor_manager.get_latest_capture()))
+
+        if path == "/api/heartbeat":
+            return self._json({
+                "heartbeat": int(time.time()) % 100000,
+                "missed": 0,
+            })
+
+        if path == "/api/imu_capture":
+            # synthetic vibration so the dashboard charts have data
+            now = time.time()
+            samples = []
+            for i in range(200):
+                t = now - (200 - i) * 0.1
+                samples.append({
+                    "ax": int(200 * math.sin(t * 2.0)),
+                    "ay": int(150 * math.sin(t * 1.3 + 1.0)),
+                    "az": int(4096 + 80 * math.sin(t * 3.1)),
+                    "gx": int(90 * math.sin(t * 1.7 + 0.5)),
+                    "gy": int(70 * math.sin(t * 2.3 + 2.0)),
+                    "gz": int(50 * math.sin(t * 0.9)),
+                })
+            return self._json(samples)
 
         if path == "/api/demo/press_button":
             started = sensor_manager.trigger_capture()

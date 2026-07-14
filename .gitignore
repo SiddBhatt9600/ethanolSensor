@@ -12,5 +12,6 @@ venv/
 # Runtime output (regenerated on every app start)
 ai_history.json
 hb_history.json
+imu_history.json
 sensor_history.json
 sensor_history_button.json
