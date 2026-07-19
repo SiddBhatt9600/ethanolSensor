@@ -9,11 +9,16 @@
 #define BMI323_ACC_CONF_REG 0x20
 #define BMI323_GYR_CONF_REG 0x21
 
-#define TURBIDITY_PIN A0
-#define DS18B20_PIN   7
+#define TURBIDITY_PIN   A0
+#define WIF_ANALOG_PIN  A1
+#define DS18B20_PIN     7
+#define FLEX_FUEL_PIN   4
 
 #define ADC_REF_VOLTAGE 3.3f
 #define ADC_MAX_COUNTS  4095.0f
+
+#define WIF_DRY_VALUE   82.0f
+#define WIF_WATER_VALUE 38.0f
 
 static int hbCounter = 0;
 bool lastState = LOW;
@@ -209,9 +214,121 @@ float rawToVoltage(int raw) {
   return ((float)raw * ADC_REF_VOLTAGE) / ADC_MAX_COUNTS;
 }
 
+// ---------------- Water-in-Fuel analog read ----------------
+ 
+// int readWifRaw() {
+//   return analogRead(WIF_ANALOG_PIN);
+// }
+ 
+// float readWifVoltage() {
+//   int raw = readWifRaw();
+//   return ((float)raw * ADC_REF_VOLTAGE) / ADC_MAX_COUNTS;
+// }
+ 
+// // Mapping: 0V = 0%, 3.3V = 100%
+// float readWifPercent() {
+//   float voltage = readWifVoltage();
+ 
+//   float percent = (voltage / ADC_REF_VOLTAGE) * 100.0f;
+ 
+//   if (percent < 0.0f) {
+//     percent = 0.0f;
+//   }
+ 
+//   if (percent > 100.0f) {
+//     percent = 100.0f;
+//   }
+ 
+//   return percent;
+// }
+
+// =========== LINEARIZED/Scaled to 0-100 ============
+int readWifRaw() {
+  return analogRead(WIF_ANALOG_PIN);
+}
+ 
+float readWifVoltage() {
+  int raw = readWifRaw();
+  return ((float)raw * ADC_REF_VOLTAGE) / ADC_MAX_COUNTS;
+}
+ 
+// This gives the uncalibrated voltage percentage:
+// 0V = 0%, 3.3V = 100%
+float readWifSensorValue() {
+  float voltage = readWifVoltage();
+  return (voltage / ADC_REF_VOLTAGE) * 100.0f;
+}
+ 
+// Calibrated water-in-fuel percentage:
+// dry air = 0%, full water = 100%
+float readWifPercent() {
+  float sensorValue = readWifSensorValue();
+ 
+  float waterPercent =
+      ((WIF_DRY_VALUE - sensorValue) * 100.0f) /
+      (WIF_DRY_VALUE - WIF_WATER_VALUE);
+ 
+  if (waterPercent < 0.0f) {
+    waterPercent = 0.0f;
+  }
+ 
+  if (waterPercent > 100.0f) {
+    waterPercent = 100.0f;
+  }
+ 
+  return waterPercent;
+}
+
+// ---------------- GM13507128 Flex Fuel Sensor ----------------
+ 
+// Reads frequency from digital pin D4.
+// Sensor output should already be scaled from 5V to 3.3V using divider.
+float readFlexFuelFrequencyHz() {
+  const unsigned long timeout_us = 50000UL; // 50 ms timeout
+ 
+  unsigned long highTime = pulseIn(FLEX_FUEL_PIN, HIGH, timeout_us);
+  unsigned long lowTime  = pulseIn(FLEX_FUEL_PIN, LOW, timeout_us);
+ 
+  if (highTime == 0 || lowTime == 0) {
+    return 0.0f; // no valid signal
+  }
+ 
+  unsigned long period_us = highTime + lowTime;
+ 
+  if (period_us == 0) {
+    return 0.0f;
+  }
+ 
+  float frequency = 1000000.0f / (float)period_us;
+ 
+  return frequency;
+}
+ 
+// GM flex fuel common mapping:
+// 50 Hz  = E0
+// 150 Hz = E100
+float readEthanolPercent() {
+  float freq = readFlexFuelFrequencyHz();
+ 
+  if (freq <= 0.0f) {
+    return -1.0f; // signal missing / error
+  }
+ 
+  float ethanol = freq - 50.0f;
+ 
+  if (ethanol < 0.0f) {
+    ethanol = 0.0f;
+  }
+ 
+  if (ethanol > 100.0f) {
+    ethanol = 100.0f;
+  }
+ 
+  return ethanol;
+}
+
 void setup() {
-  // put your setup code here, to run once:
-  pinMode(buttonPin, INPUT);
+  pinMode(buttonPin, INPUT_PULLUP);
   Serial.begin(9600);
   Bridge.begin();
 
@@ -222,7 +339,9 @@ void setup() {
   Serial.println("BMI323 accel/gyro read test");
   analogReadResolution(12);
   pinMode(TURBIDITY_PIN, INPUT);
+  pinMode(WIF_ANALOG_PIN, INPUT);
   pinMode(DS18B20_PIN, INPUT_PULLUP);
+  pinMode(FLEX_FUEL_PIN, INPUT);
 
   uint16_t chip = readReg16(BMI323_CHIP_ID_REG);
   Serial.print("CHIP_ID = 0x");
@@ -233,16 +352,14 @@ void setup() {
   Serial.println("BMI323 configured");
   Serial.println("----------------------");
 
-  randomSeed(analogRead(A0)); 
   Bridge.provide_safe("getHbState", getHbState);
-  // Bridge.provide_safe("getFuelTemp", getFuelTemp);
   Bridge.provide_safe("readDS18B20TempC", readDS18B20TempC);
   Bridge.provide_safe("getethanolPercentage", getethanolPercentage);
   Bridge.provide_safe("getwif", getwif);
-  // Bridge.provide_safe("getturbidity", getturbidity);
   Bridge.provide_safe("readTurbidityRaw", readTurbidityRaw);
   Bridge.provide_safe("getdensity", getdensity);
 
+  // NOT USING RIGHT NOW
   Bridge.provide_safe("poll_sensors", poll_sensors);
 
   Serial.println("MCU ready: Turbidity + DS18B20 polling");
@@ -250,7 +367,7 @@ void setup() {
 }
 
 // ---------------- Turbidity read ----------------
-
+// NOT USING RIGHT NOW
 String poll_sensors() {
   uint32_t t_ms = millis();
 
@@ -285,34 +402,17 @@ int getHbState() {
   return hbCounter;
 }
 
-int getFuelTemp() {
-  int randomFloat = random(20, 70);
-  int fuelTemp = randomFloat;
-  return fuelTemp;
+float getethanolPercentage() {
+  return readEthanolPercent();
 }
 
-int getethanolPercentage() {
-  int randomFloat = random(0, 100);
-  int ehtPer = randomFloat;
-  return ehtPer;
-}
-
-int getwif() {
-  int randomFloat = random(0, 100);
-  int wifVal = randomFloat;
-  return wifVal;
-}
-
-int getturbidity() {
-  int randomFloat = random(0, 100);
-  int turbidityVal = randomFloat;
-  return turbidityVal;
+float getwif() {
+  return readWifPercent();
 }
 
 float getdensity() {
-  float randomFloat = random(700000, 800000) / 1000.0;
-  float densityVal = randomFloat;
-  return densityVal;
+  // Hardcoded
+  return 750;
 }
 
 
@@ -329,10 +429,11 @@ void loop() {
     Bridge.notify("record_imu_values", ax, ay, az, gx, gy, gz);
 
     bool currentState = digitalRead(buttonPin);
-    if (currentState == HIGH && lastState == LOW) {
+    if (currentState == LOW && lastState == HIGH) {
         Serial.println("Button Pressed, recording sensor values");
         Bridge.notify("record_sensor_values");
     }
     lastState = currentState;
+
     delay(100);
 }
