@@ -13,6 +13,22 @@ CONTINUOUS_INTERVAL = 10      # seconds
 CAPTURE_INTERVAL = 0.1        # 100 ms
 CAPTURE_SAMPLE_COUNT = 5
 
+# The MCU's readTurbidityRaw() returns raw 12-bit ADC counts
+# (0-4095), but the AI model (features.py / fuel_simulator.py)
+# was trained expecting turbidity on a roughly 0-100 scale. Left
+# unscaled, every real reading reads as an extreme outlier and the
+# model will call everything ADULTERATED regardless of true quality.
+#
+# TURBIDITY_INVERTED: whether higher ADC counts mean CLEARER fuel
+# (common for phototransistor-style turbidity modules) or more
+# turbid fuel. This depends on the specific sensor wiring and has
+# NOT been hardware-verified. Confirm before the demo: dip the
+# probe in clean fuel vs. a deliberately cloudy sample and check
+# which one gives the higher raw ADC reading. If clean fuel reads
+# HIGHER, set this True.
+TURBIDITY_ADC_MAX = 4095.0
+TURBIDITY_INVERTED = False
+
 
 class SensorManager:
 
@@ -132,6 +148,22 @@ class SensorManager:
                 return None
         return value
 
+    def scale_turbidity(self, raw):
+        """Raw 12-bit ADC counts (0-4095) -> 0-100 turbidity index
+        the AI model was trained on. See TURBIDITY_INVERTED note
+        above for the one thing that still needs hardware
+        verification."""
+
+        if raw is None:
+            return None
+
+        pct = (float(raw) / TURBIDITY_ADC_MAX) * 100.0
+
+        if TURBIDITY_INVERTED:
+            pct = 100.0 - pct
+
+        return round(max(0.0, min(100.0, pct)), 2)
+
     def readSensors(self):
         try:
             return {
@@ -153,7 +185,9 @@ class SensorManager:
 
                 "turbidity":
                 self.sanitize(
-                    self.bridge.call("readTurbidityRaw")
+                    self.scale_turbidity(
+                        self.bridge.call("readTurbidityRaw")
+                    )
                 ),
 
                 "density":
