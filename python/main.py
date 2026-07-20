@@ -110,12 +110,9 @@ ui.expose_api(
     hbManager.get_status
 )
 
-def record_imu_values(ax: int, ay: int, az: int, \
-                      gx: int , gy: int, gz: int):
-    logger.debug(f"record_imu_values called with raw a-values: \
-                 ax={ax}, ay={ay}, az={az}")
-    logger.debug(f"record_imu_values called with raw g-values: \
-                 gx={gx}, gy={gy}, gz={gz}")
+def record_imu_values(ax: int, ay: int, az: int, gx: int , gy: int, gz: int):
+    # logger.info(f"record_imu_values called with raw a-values: ax={ax}, ay={ay}, az={az}")
+    # logger.info(f"record_imu_values called with raw g-values: gx={gx}, gy={gy}, gz={gz}")
     imuManager.record(
         ax,
         ay,

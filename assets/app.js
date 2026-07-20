@@ -30,6 +30,10 @@ function addEvent(message)
  * Helpers
  *
  *****************************************************************/
+function display(value, unit = "")
+{
+    return value == null ? "--" : value + unit;
+}
 
 function updateLastUpdate()
 {
@@ -114,50 +118,41 @@ async function loadSensorData()
         document.getElementById(
             "ethanolValue"
         ).innerHTML =
-        latest.ethanol + " %";
+        display(latest.ethanol, " %");
 
         document.getElementById(
             "temperatureValue"
         ).innerHTML =
-        latest.temp + " °C";
+        display(latest.temp, " °C");
 
         document.getElementById(
             "densityValue"
         ).innerHTML =
-        latest.density;
+        display(latest.density);
 
-        if(latest.wif < 30)
+        if (latest.wif == null)
         {
-
-            document.getElementById(
-                "waterValue"
-            ).innerHTML =
-            "🟢 Normal";
-
+            document.getElementById("waterValue").innerHTML =
+                "--";
         }
-        else if(latest.wif < 70)
+        else if (latest.wif < 30)
         {
-
-            document.getElementById(
-                "waterValue"
-            ).innerHTML =
-            "🟡 Warning";
-
+            document.getElementById("waterValue").innerHTML =
+                "🟢 Normal";
+        }
+        else if (latest.wif < 70)
+        {
+            document.getElementById("waterValue").innerHTML =
+                "🟡 Warning";
         }
         else
         {
-
-            document.getElementById(
-                "waterValue"
-            ).innerHTML =
-            "🔴 Critical";
-
+            document.getElementById("waterValue").innerHTML =
+                "🔴 Critical";
         }
 
-        document.getElementById(
-            "turbidityValue"
-        ).innerHTML =
-        latest.turbidity;
+        document.getElementById("turbidityValue").innerHTML =
+            display(latest.turbidity);
 
         /*****************************************************
          * Table
