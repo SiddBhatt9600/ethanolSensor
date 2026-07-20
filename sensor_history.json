@@ -1,0 +1,170 @@
+[
+    {
+        "timestamp": "2026-07-14T12:23:29.577186+05:30",
+        "temp": 30.4375,
+        "ethanol": 33,
+        "wif": 43,
+        "turbidity": 414,
+        "density": 716.26
+    },
+    {
+        "timestamp": "2026-07-14T12:25:29.247861+05:30",
+        "temp": 30.5,
+        "ethanol": 33,
+        "wif": 43,
+        "turbidity": 430,
+        "density": 716.26
+    },
+    {
+        "timestamp": "2026-07-14T12:25:39.346036+05:30",
+        "temp": 30.5,
+        "ethanol": 29,
+        "wif": 0,
+        "turbidity": 418,
+        "density": 775.51
+    },
+    {
+        "timestamp": "2026-07-14T12:25:49.472008+05:30",
+        "temp": 30.4375,
+        "ethanol": 52,
+        "wif": 56,
+        "turbidity": 414,
+        "density": 717.26
+    },
+    {
+        "timestamp": "2026-07-14T12:26:14.822419+05:30",
+        "temp": 30.5,
+        "ethanol": 33,
+        "wif": 43,
+        "turbidity": 396,
+        "density": 716.26
+    },
+    {
+        "timestamp": "2026-07-14T12:26:24.934484+05:30",
+        "temp": 30.5,
+        "ethanol": 29,
+        "wif": 0,
+        "turbidity": 384,
+        "density": 775.51
+    },
+    {
+        "timestamp": "2026-07-14T12:33:20.289052+05:30",
+        "temp": null,
+        "ethanol": 33,
+        "wif": 43,
+        "turbidity": 426,
+        "density": 716.26
+    },
+    {
+        "timestamp": "2026-07-14T12:33:30.351739+05:30",
+        "temp": null,
+        "ethanol": 29,
+        "wif": 0,
+        "turbidity": 425,
+        "density": 775.51
+    },
+    {
+        "timestamp": "2026-07-14T12:33:40.473401+05:30",
+        "temp": null,
+        "ethanol": 52,
+        "wif": 56,
+        "turbidity": 414,
+        "density": 717.26
+    },
+    {
+        "timestamp": "2026-07-14T12:33:50.605630+05:30",
+        "temp": null,
+        "ethanol": 19,
+        "wif": 11,
+        "turbidity": 419,
+        "density": 768.35
+    },
+    {
+        "timestamp": "2026-07-14T12:34:00.770932+05:30",
+        "temp": null,
+        "ethanol": 43,
+        "wif": 5,
+        "turbidity": 408,
+        "density": 754.11
+    },
+    {
+        "timestamp": "2026-07-14T12:34:10.970209+05:30",
+        "temp": null,
+        "ethanol": 93,
+        "wif": 30,
+        "turbidity": 427,
+        "density": 737.37
+    },
+    {
+        "timestamp": "2026-07-14T12:34:21.123277+05:30",
+        "temp": null,
+        "ethanol": 69,
+        "wif": 32,
+        "turbidity": 383,
+        "density": 726.92
+    },
+    {
+        "timestamp": "2026-07-14T12:34:31.314234+05:30",
+        "temp": null,
+        "ethanol": 47,
+        "wif": 72,
+        "turbidity": 405,
+        "density": 732.87
+    },
+    {
+        "timestamp": "2026-07-14T12:34:41.446353+05:30",
+        "temp": null,
+        "ethanol": 80,
+        "wif": 23,
+        "turbidity": 414,
+        "density": 738.55
+    },
+    {
+        "timestamp": "2026-07-14T23:42:31.674550+05:30",
+        "temp": null,
+        "ethanol": 33,
+        "wif": 43,
+        "turbidity": 394,
+        "density": 716.26
+    },
+    {
+        "timestamp": "2026-07-14T23:42:41.783275+05:30",
+        "temp": null,
+        "ethanol": 29,
+        "wif": 0,
+        "turbidity": 403,
+        "density": 775.51
+    },
+    {
+        "timestamp": "2026-07-14T23:42:51.914464+05:30",
+        "temp": null,
+        "ethanol": 52,
+        "wif": 56,
+        "turbidity": 371,
+        "density": 717.26
+    },
+    {
+        "timestamp": "2026-07-14T23:43:01.992181+05:30",
+        "temp": null,
+        "ethanol": 19,
+        "wif": 11,
+        "turbidity": 400,
+        "density": 768.35
+    },
+    {
+        "timestamp": "2026-07-14T23:43:12.108006+05:30",
+        "temp": null,
+        "ethanol": 43,
+        "wif": 5,
+        "turbidity": 397,
+        "density": 754.11
+    },
+    {
+        "timestamp": "2026-07-14T23:43:22.240605+05:30",
+        "temp": null,
+        "ethanol": 93,
+        "wif": 30,
+        "turbidity": 395,
+        "density": 737.37
+    }
+]
