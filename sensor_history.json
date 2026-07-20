@@ -166,5 +166,93 @@
         "wif": 30,
         "turbidity": 395,
         "density": 737.37
+    },
+    {
+        "timestamp": "2026-07-21T00:12:30.903360+05:30",
+        "temp": 40,
+        "ethanol": 10,
+        "wif": 0,
+        "turbidity": 3.98,
+        "density": 727.87
+    },
+    {
+        "timestamp": "2026-07-21T00:12:32.938861+05:30",
+        "temp": 38,
+        "ethanol": 9,
+        "wif": 4,
+        "turbidity": 1.98,
+        "density": 742.42
+    },
+    {
+        "timestamp": "2026-07-21T00:12:34.960125+05:30",
+        "temp": 41,
+        "ethanol": 10,
+        "wif": 0,
+        "turbidity": 3.98,
+        "density": 728.11
+    },
+    {
+        "timestamp": "2026-07-21T00:12:36.990273+05:30",
+        "temp": 31,
+        "ethanol": 20,
+        "wif": 0,
+        "turbidity": 2.98,
+        "density": 749.55
+    },
+    {
+        "timestamp": "2026-07-21T00:12:39.017167+05:30",
+        "temp": 41,
+        "ethanol": 11,
+        "wif": 2,
+        "turbidity": 3.98,
+        "density": 723.42
+    },
+    {
+        "timestamp": "2026-07-21T00:12:41.048822+05:30",
+        "temp": 32,
+        "ethanol": 9,
+        "wif": 3,
+        "turbidity": 0.98,
+        "density": 725.78
+    },
+    {
+        "timestamp": "2026-07-21T00:12:43.083074+05:30",
+        "temp": 40,
+        "ethanol": 22,
+        "wif": 3,
+        "turbidity": 1.98,
+        "density": 744.38
+    },
+    {
+        "timestamp": "2026-07-21T00:12:45.121862+05:30",
+        "temp": 30,
+        "ethanol": 22,
+        "wif": 4,
+        "turbidity": 5.98,
+        "density": 740.68
+    },
+    {
+        "timestamp": "2026-07-21T00:12:47.156111+05:30",
+        "temp": 32,
+        "ethanol": 19,
+        "wif": 1,
+        "turbidity": 5.98,
+        "density": 737.31
+    },
+    {
+        "timestamp": "2026-07-21T00:12:49.185241+05:30",
+        "temp": 41,
+        "ethanol": 22,
+        "wif": 2,
+        "turbidity": 3.98,
+        "density": 729.4
+    },
+    {
+        "timestamp": "2026-07-21T00:12:51.212270+05:30",
+        "temp": 40,
+        "ethanol": 18,
+        "wif": 3,
+        "turbidity": 5.98,
+        "density": 730.6
     }
 ]

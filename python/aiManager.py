@@ -6,6 +6,7 @@ import zoneinfo
 from collections import deque
 from datetime import datetime
 
+import mileageEstimator
 from fuelQualityModel import FuelQualityModel
 
 MAX_AI_RECORDS = 1000
@@ -22,6 +23,12 @@ class AiManager:
 
         self.sensor_manager = sensor_manager
         self.logger = logger
+
+        # Optional — set via set_imu_manager() after construction so
+        # main.py's existing manager startup order doesn't need to
+        # change. Mileage estimation works without it (driver-
+        # behavior term just reports "unavailable").
+        self.imu_manager = None
 
         if weights_path is None:
 
@@ -63,6 +70,31 @@ class AiManager:
         return datetime.now(
             zoneinfo.ZoneInfo("Asia/Kolkata")
         ).isoformat()
+
+    ###########################################################
+
+    def set_imu_manager(self, imu_manager):
+        """Wire up the IMU manager for the mileage estimator's
+        driver-behavior term. Optional — call after both managers
+        exist in main.py."""
+
+        self.imu_manager = imu_manager
+
+    ###########################################################
+
+    def _mileage(self, reading, verdict):
+
+        imu_stats = None
+
+        if self.imu_manager is not None:
+
+            try:
+                imu_stats = self.imu_manager.get_statistics()
+
+            except Exception:
+                imu_stats = None
+
+        return mileageEstimator.estimate(reading, verdict, imu_stats)
 
     ###########################################################
     #
@@ -155,6 +187,8 @@ class AiManager:
 
         anomalies = self.check_anomaly(reading)
 
+        mileage = self._mileage(reading, result["verdict"])
+
         verdict = {
 
             "timestamp": self._timestamp(),
@@ -167,9 +201,13 @@ class AiManager:
 
             "probs": result["probs"],
 
+            "blend": result["blend"],
+
             "explain": result["explain"],
 
-            "anomalies": anomalies
+            "anomalies": anomalies,
+
+            "mileage": mileage
 
         }
 
@@ -198,6 +236,8 @@ class AiManager:
 
         result = self.model.predict(avg)
 
+        mileage = self._mileage(avg, result["verdict"])
+
         return {
 
             "timestamp": self._timestamp(),
@@ -212,7 +252,11 @@ class AiManager:
 
             "probs": result["probs"],
 
-            "explain": result["explain"]
+            "blend": result["blend"],
+
+            "explain": result["explain"],
+
+            "mileage": mileage
 
         }
 

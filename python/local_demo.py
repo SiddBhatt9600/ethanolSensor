@@ -134,11 +134,16 @@ class MockBridge:
             if name == "getHbState":
                 self._hb += 1
                 return self._hb
+            if name == "readTurbidityRaw":
+                # Real MCU returns raw 12-bit ADC counts (0-4095);
+                # SensorManager.scale_turbidity() converts back to
+                # the 0-100 index. Emulate that here so the demo
+                # exercises the same scaling path as the board.
+                return int(self._reading["turbidity"] / 100.0 * 4095)
             key = {
-                "getFuelTemp": "temp",
+                "readDS18B20TempC": "temp",
                 "getethanolPercentage": "ethanol",
                 "getwif": "wif",
-                "getturbidity": "turbidity",
                 "getdensity": "density",
             }[name]
             value = self._reading[key]
@@ -157,6 +162,46 @@ class ConsoleLogger:
         traceback.print_exc()
 
 
+class FakeImuManager:
+    """Feeds AiManager's mileage estimator synthetic-but-valid IMU
+    stats locally, so the "IMU delivering data" path is demoable
+    without the board. Real ImuManager.get_statistics() shape."""
+
+    def get_statistics(self):
+        now = time.time()
+        samples = [
+            {
+                "ax": int(200 * math.sin(now * 2.0 - i * 0.1)),
+                "ay": int(150 * math.sin(now * 1.3 - i * 0.1 + 1.0)),
+                "az": int(4096 + 80 * math.sin(now * 3.1 - i * 0.1)),
+                "gx": int(90 * math.sin(now * 1.7 - i * 0.1 + 0.5)),
+                "gy": int(70 * math.sin(now * 2.3 - i * 0.1 + 2.0)),
+                "gz": int(50 * math.sin(now * 0.9 - i * 0.1)),
+            }
+            for i in range(50)
+        ]
+
+        def stats(vals):
+            avg = sum(vals) / len(vals)
+            rms = math.sqrt(sum(v * v for v in vals) / len(vals))
+            return {"min": min(vals), "max": max(vals),
+                    "avg": round(avg, 2), "rms": round(rms, 2)}
+
+        axes = {k: [s[k] for s in samples]
+                for k in ("ax", "ay", "az", "gx", "gy", "gz")}
+
+        return {
+            "sampleCount": len(samples),
+            "totalSamples": len(samples),
+            "accelerometer": {"x": stats(axes["ax"]),
+                               "y": stats(axes["ay"]),
+                               "z": stats(axes["az"])},
+            "gyroscope": {"x": stats(axes["gx"]),
+                          "y": stats(axes["gy"]),
+                          "z": stats(axes["gz"])},
+        }
+
+
 # ------------------------------------------------------------------
 # Managers (the real ones)
 # ------------------------------------------------------------------
@@ -167,6 +212,7 @@ sensor_manager = SensorManager(bridge, logger)
 sensor_manager.start()
 
 ai_manager = AiManager(sensor_manager, logger)
+ai_manager.set_imu_manager(FakeImuManager())
 ai_manager.start()
 
 

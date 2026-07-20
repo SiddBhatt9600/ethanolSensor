@@ -351,8 +351,10 @@ async function loadAiVerdict() {
         const verdictEl = document.getElementById("aiVerdict");
         const confEl = document.getElementById("aiConfidence");
         const probsEl = document.getElementById("aiProbs");
+        const blendEl = document.getElementById("aiBlend");
         const signalsEl = document.getElementById("aiSignals");
         const anomEl = document.getElementById("aiAnomalies");
+        const mileageEl = document.getElementById("mileageCard");
 
         if (!v || !v.verdict || v.verdict === "UNKNOWN") {
 
@@ -364,8 +366,10 @@ async function loadAiVerdict() {
             "First verdict arrives within ~10 seconds.";
 
             probsEl.innerHTML = "";
+            blendEl.innerHTML = "";
             signalsEl.innerHTML = "";
             anomEl.innerHTML = "";
+            mileageEl.innerHTML = "Waiting for first verdict…";
 
             return;
 
@@ -383,6 +387,49 @@ async function loadAiVerdict() {
         `GOOD ${(v.probs.GOOD * 100).toFixed(1)} % · ` +
         `SUSPECT ${(v.probs.SUSPECT * 100).toFixed(1)} % · ` +
         `ADULTERATED ${(v.probs.ADULTERATED * 100).toFixed(1)} %`;
+
+        if (v.blend) {
+
+            blendEl.innerHTML = v.blend.in_spec
+
+            ? `Blend check : ${v.blend.nearest} — measured ` +
+              `${v.blend.measured} % ethanol (within band) ✓`
+
+            : `⚠ Blend check : measured ${v.blend.measured} % ` +
+              `ethanol — OFF-SPEC (nearest ${v.blend.nearest})`;
+
+        }
+
+        else {
+
+            blendEl.innerHTML = "";
+
+        }
+
+        if (v.mileage) {
+
+            const m = v.mileage;
+
+            mileageEl.innerHTML =
+
+            `<b>${m.estimated_kmpl} km/l</b> estimated ` +
+            `(baseline ${m.baseline_kmpl} km/l, ` +
+            `${m.total_penalty_pct}% impact)<br>` +
+
+            `Ethanol blend: -${m.breakdown.ethanol_blend_pct}% · ` +
+            `Fuel quality: -${m.breakdown.fuel_quality_pct}% · ` +
+            `Driving style: -${m.breakdown.driving_behavior_pct}%<br>` +
+
+            `<span class="mileageNote">${m.notes.join(" ")}</span><br>` +
+            `<span class="mileageNote">${m.disclaimer}</span>`;
+
+        }
+
+        else {
+
+            mileageEl.innerHTML = "";
+
+        }
 
         signalsEl.innerHTML =
 

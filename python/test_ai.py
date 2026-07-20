@@ -29,10 +29,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import aiManager as aiManagerModule
 import fuel_simulator
+import mileageEstimator
 from aiManager import AiManager
 from features import extract, expected_density15
-from fuelQualityModel import FuelQualityModel
+from fuelQualityModel import FuelQualityModel, classify_blend
 from fuel_simulator import generate_dataset, LABELS
+from sensorManager import SensorManager
 
 PASS = 0
 FAIL = 0
@@ -156,6 +158,66 @@ watery = {"temp": 30, "ethanol": 15, "wif": 15,
 res = model.predict(watery)
 check("near-saturation water -> SUSPECT",
       res["verdict"] == "SUSPECT", res["verdict"])
+check("hygroscopic-blend water risk signal present",
+      any("phase separation risk" in s
+          for s in res["explain"]["signals"]),
+      str(res["explain"]["signals"]))
+
+# Density sensor not wired yet on the real board -> getdensity()
+# returns a hardcoded 750. Must be flagged, not silently trusted.
+no_density_sensor = {"temp": 30, "ethanol": 10, "wif": 2,
+                      "turbidity": 3, "density": 750.0}
+res = model.predict(no_density_sensor)
+check("hardcoded density placeholder is flagged",
+      any("density sensor not connected" in s
+          for s in res["explain"]["signals"]),
+      str(res["explain"]["signals"]))
+
+# ------------------------------------------------------------------
+# 4b. E20 blend verification (topical: India's E20 rollout)
+# ------------------------------------------------------------------
+print("\n[4b] Blend verification")
+
+check("E20 in band",
+      classify_blend(20.4) == {"nearest": "E20", "measured": 20.4,
+                               "in_spec": True},
+      str(classify_blend(20.4)))
+check("E33 sold as E20 -> OFF-SPEC",
+      classify_blend(33.0)["in_spec"] is False
+      and classify_blend(33.0)["nearest"] == "E20",
+      str(classify_blend(33.0)))
+
+overblend = {"temp": 30, "ethanol": 33, "wif": 3,
+             "turbidity": 4, "density": 748.0}
+res = model.predict(overblend)
+check("over-blend surfaced in predict() payload",
+      res["blend"]["in_spec"] is False, str(res["blend"]))
+check("over-blend flagged in signals",
+      any("over/under-blending" in s
+          for s in res["explain"]["signals"]),
+      str(res["explain"]["signals"]))
+
+# ------------------------------------------------------------------
+# 4c. Turbidity ADC scaling (real board returns raw 0-4095 counts)
+# ------------------------------------------------------------------
+print("\n[4c] Turbidity ADC scaling")
+
+class _NullLogger:
+    def info(self, *a, **k):
+        pass
+
+    def exception(self, *a, **k):
+        pass
+
+
+sm = SensorManager(None, _NullLogger())
+check("raw 0 -> 0%", sm.scale_turbidity(0) == 0.0)
+check("raw 4095 -> 100%", sm.scale_turbidity(4095) == 100.0)
+check("raw 410 (as seen in real sensor_history.json) -> ~10%",
+      abs(sm.scale_turbidity(410) - 10.01) < 0.1,
+      str(sm.scale_turbidity(410)))
+check("out-of-range raw clamps to 100%", sm.scale_turbidity(9000) == 100.0)
+check("None passes through", sm.scale_turbidity(None) is None)
 
 for reading in (good_e10, free_water, kero):
     r = model.predict(reading)
@@ -165,6 +227,50 @@ for reading in (good_e10, free_water, kero):
           all(k in r["explain"] for k in
               ("density15", "expected_density15",
                "rho_residual", "signals")))
+
+# ------------------------------------------------------------------
+# 4d. Mileage estimator (formula-based, not trained — see module
+#     docstring for why there is no ground-truth data to train on)
+# ------------------------------------------------------------------
+print("\n[4d] Mileage estimator")
+
+e0 = mileageEstimator.estimate({"ethanol": 0}, "GOOD")
+e20 = mileageEstimator.estimate({"ethanol": 20}, "GOOD")
+check("E0 has zero ethanol penalty",
+      e0["breakdown"]["ethanol_blend_pct"] == 0.0, str(e0))
+check("E20 loses ~6.5% to ethanol blend",
+      abs(e20["breakdown"]["ethanol_blend_pct"] - 6.5) < 0.01,
+      str(e20))
+check("estimated_kmpl < baseline_kmpl when penalty > 0",
+      e20["estimated_kmpl"] < e20["baseline_kmpl"], str(e20))
+
+good_est = mileageEstimator.estimate({"ethanol": 10}, "GOOD")
+adult_est = mileageEstimator.estimate({"ethanol": 10}, "ADULTERATED")
+check("ADULTERATED estimate worse than GOOD at same blend",
+      adult_est["estimated_kmpl"] < good_est["estimated_kmpl"],
+      f"good={good_est['estimated_kmpl']} "
+      f"adult={adult_est['estimated_kmpl']}")
+
+no_imu = mileageEstimator.estimate({"ethanol": 10}, "GOOD", imu_stats=None)
+check("no IMU -> driving penalty is 0 and it says so",
+      no_imu["breakdown"]["driving_behavior_pct"] == 0.0
+      and any("IMU" in n for n in no_imu["notes"]),
+      str(no_imu))
+
+error_imu_stats = {
+    "sampleCount": 5,
+    "accelerometer": {"x": {"min": -1, "max": -1},
+                       "y": {"min": -1, "max": -1},
+                       "z": {"min": -1, "max": -1}},
+}
+error_est = mileageEstimator.estimate(
+    {"ethanol": 10}, "GOOD", imu_stats=error_imu_stats)
+check("all -1 IMU stats (BMI323 read failure) treated as unavailable",
+      any("no valid data" in n for n in error_est["notes"]),
+      str(error_est["notes"]))
+
+check("mileage payload never omits the disclaimer",
+      "disclaimer" in e20 and len(e20["disclaimer"]) > 0)
 
 # ------------------------------------------------------------------
 # 5. Latency
@@ -251,8 +357,8 @@ check("worker produced multiple verdicts", len(verdicts) >= 3,
 current = mgr2.get_current_verdict()
 check("current verdict has full payload",
       all(k in current for k in
-          ("timestamp", "verdict", "confidence", "probs",
-           "explain", "anomalies")),
+          ("timestamp", "verdict", "confidence", "probs", "blend",
+           "explain", "anomalies", "mileage")),
       str(list(current.keys())))
 check("ai_history.json written",
       os.path.exists("ai_history.json"))

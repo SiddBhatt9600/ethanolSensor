@@ -35,6 +35,8 @@ aiManager.start()
 imuManager = ImuManager(logger, ui)
 imuManager.start()
 
+aiManager.set_imu_manager(imuManager)
+
 
 def get_sensor_data():
     """
