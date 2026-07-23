@@ -23,7 +23,7 @@ sensorManager = SensorManager(bridge, logger)
 sensorManager.start()
 
 ###############################################################
-# WebUI
+# WebUI and Instantiate imuManager with it
 ###############################################################
 
 ui = WebUI()
@@ -103,7 +103,6 @@ try:
     )
 
 except RuntimeError:
-
     logger.info(
         "'record_sensor_values' already registered."
     )
@@ -119,7 +118,6 @@ try:
     )
 
 except RuntimeError:
-
     logger.info(
         "'record_imu_values' already registered."
     )

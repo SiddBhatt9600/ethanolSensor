@@ -31,7 +31,6 @@ class ImuManager:
     ###########################################################
 
     def __init__(self, logger, ui=None):
-
         self.logger = logger
         self.ui = ui
 
@@ -58,7 +57,6 @@ class ImuManager:
     ###########################################################
 
     def timestamp(self):
-
         return datetime.now(
             zoneinfo.ZoneInfo("Asia/Kolkata")
         ).isoformat()
@@ -70,13 +68,10 @@ class ImuManager:
     ###########################################################
 
     def write_json(self):
-
         with self._lock:
-
             history = list(self.samples)
 
         with open("imu_history.json", "w") as fp:
-
             json.dump(history, fp, indent=4)
 
     ###########################################################
@@ -96,7 +91,6 @@ class ImuManager:
     ):
 
         sample = {
-
             "timestamp": self.timestamp(),
         
             "epoch": time.time(),
@@ -108,29 +102,23 @@ class ImuManager:
             "gx": int(gx),
             "gy": int(gy),
             "gz": int(gz)
-        
         }
 
         with self._lock:
-
             self.samples.append(sample)
-
             self.total_samples += 1
 
         #
         # Push to Web Dashboard
         #
         if self.ui is not None:
-
             try:
-
                 self.ui.send_message(
                     "imu_sample",
                     sample
                 )
 
             except Exception:
-
                 pass
 
     ###########################################################
@@ -145,29 +133,21 @@ class ImuManager:
     ):
 
         with self._lock:
-
             return list(self.samples)[-count:]
 
     ###########################################################
 
     def get_last_30_minutes(self):
-
         with self._lock:
-
             return list(self.samples)
 
     ###########################################################
 
     def get_statistics(self):
-
         with self._lock:
-
             if len(self.samples) == 0:
-
                 return {
-
                     "sampleCount": 0
-
                 }
 
             ax = [x["ax"] for x in self.samples]
@@ -179,7 +159,6 @@ class ImuManager:
             gz = [x["gz"] for x in self.samples]
 
         def stats(values):
-
             avg = sum(values) / len(values)
 
             rms = math.sqrt(
@@ -188,41 +167,25 @@ class ImuManager:
             )
 
             return {
-
                 "min": min(values),
-
                 "max": max(values),
-
                 "avg": round(avg, 2),
-
                 "rms": round(rms, 2)
-
             }
 
         return {
-
             "sampleCount": len(ax),
-
             "totalSamples": self.total_samples,
-
             "accelerometer": {
-
                 "x": stats(ax),
-
                 "y": stats(ay),
-
                 "z": stats(az)
-
             },
 
             "gyroscope": {
-
                 "x": stats(gx),
-
                 "y": stats(gy),
-
                 "z": stats(gz)
-
             }
 
         }
@@ -230,15 +193,11 @@ class ImuManager:
     ###########################################################
 
     def clear_history(self):
-
         with self._lock:
-
             self.samples.clear()
-
             self.total_samples = 0
 
         with open("imu_history.json", "w") as fp:
-
             json.dump([], fp, indent=4)
 
     ###########################################################
@@ -248,24 +207,17 @@ class ImuManager:
     ###########################################################
     
     def _worker(self):
-    
         self.logger.info("ImuManager worker started.")
     
         while self._running:
-    
             try:
-    
                 now = time.time()
-    
                 #
                 # Flush RAM buffer to disk every 30 seconds
                 #
                 if (now - self.last_write) >= JSON_WRITE_INTERVAL:
-    
                     self.write_json()
-    
                     self.last_write = now
-    
                     self.logger.info(
                         f"IMU Buffer: {len(self.samples)}/{MAX_BUFFER_SIZE} "
                         f"(Total Samples: {self.total_samples})"
@@ -277,7 +229,6 @@ class ImuManager:
                 time.sleep(1)
     
             except Exception as e:
-    
                 self.logger.exception(
                     f"ImuManager Worker Error: {e}"
                 )
@@ -302,7 +253,6 @@ class ImuManager:
     ###########################################################
     
     def start(self):
-    
         if self._running:
             return
     
@@ -314,19 +264,12 @@ class ImuManager:
         # Fresh start
         #
         self.clear_history()
-    
         self.last_write = time.time()
-    
         self._running = True
-    
         self._thread = threading.Thread(
-    
             target=self._worker,
-    
             name="ImuManager",
-    
             daemon=True
-    
         )
     
         self._thread.start()
@@ -340,15 +283,10 @@ class ImuManager:
         )
     
         self._running = False
-    
         if (
-    
             self._thread is not None
-    
             and
-    
             threading.current_thread() != self._thread
-    
         ):
     
             self._thread.join()
@@ -371,30 +309,24 @@ class ImuManager:
     ###########################################################
     
     def export_json(self, filename):
-    
         with self._lock:
-    
             data = list(self.samples)
     
         with open(filename, "w") as fp:
-    
             json.dump(data, fp, indent=4)
     
     ###########################################################
     
     def export_csv(self, filename):
-    
         import csv
     
         with self._lock:
-    
             data = list(self.samples)
     
         if len(data) == 0:
             return
     
         with open(filename, "w", newline="") as fp:
-    
             writer = csv.writer(fp)
     
             writer.writerow([
@@ -408,7 +340,6 @@ class ImuManager:
             ])
     
             for sample in data:
-    
                 writer.writerow([
     
                     sample["timestamp"],

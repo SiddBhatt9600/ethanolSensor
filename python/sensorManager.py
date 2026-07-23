@@ -17,7 +17,6 @@ CAPTURE_SAMPLE_COUNT = 5
 class SensorManager:
 
     def __init__(self, bridge, logger):
-
         self.bridge = bridge
         self.logger = logger
 
@@ -25,56 +24,34 @@ class SensorManager:
         self._thread = None
         self._lock = threading.Lock()
 
-        #
         # Continuous history cache
-        #
         self.history_cache = []
 
-        #
         # Button capture state
-        #
         self.capture_active = False
         self.capture_pending = False
         self.capture_samples = []
 
-        #
         # Scheduler
-        #
         self.next_continuous = time.time()
         self.next_capture = 0
 
-    ###########################################################
-    #
     # Utility Functions
-    #
-    ###########################################################
-
     def _timestamp(self):
-
         return datetime.now(
             zoneinfo.ZoneInfo("Asia/Kolkata")
         ).isoformat()
 
-    ###########################################################
-    #
     # JSON Helpers
-    #
-    ###########################################################
-
     def clear_button_json(self):
-
         with open("sensor_history_button.json", "w") as fp:
-
             json.dump([], fp, indent=4)
 
     ###########################################################
 
     def save_history(self):
-
         self.history_cache = self.history_cache[-MAX_SENSOR_RECORDS:]
-
         with open("sensor_history.json", "w") as fp:
-
             json.dump(
                 self.history_cache,
                 fp,
@@ -84,19 +61,13 @@ class SensorManager:
     ###########################################################
     
     def average(self, key):
-
         values = [
-
             x[key]
-
             for x in self.capture_samples
-
             if x[key] is not None
-
         ]
 
         if not values:
-
             return None
 
         return round(
@@ -105,15 +76,11 @@ class SensorManager:
         )
 
     def save_capture(self):
-
         output = {
-
             "timestamp": self._timestamp(),
-
             "samples": self.capture_samples,
 
             "average": {
-
                 "temp":
                 self.average("temp"),
 
@@ -128,9 +95,7 @@ class SensorManager:
 
                 "density":
                 self.average("density")
-
             }
-
         }
 
         with open(
@@ -144,10 +109,7 @@ class SensorManager:
                 indent=4
             )
 
-    ###########################################################
-    #
     # Sensor Reading
-    #
     ###########################################################
 
     def sanitize(self, value):
@@ -157,33 +119,37 @@ class SensorManager:
         return value
 
     def readSensors(self):
-
         try:
-
             return {
-
                 "timestamp": self._timestamp(),
-
                 "temp":
                 self.sanitize(
-                    self.bridge.call("readDS18B20TempC")
+                    round(
+                        self.bridge.call("readDS18B20TempC"),
+                        2
+                    )
                 ),
-
                 "ethanol":
                 self.sanitize(
-                    self.bridge.call("getethanolPercentage")
+                    round(
+                        self.bridge.call("getethanolPercentage"),
+                        2
+                    )
                 ),
-
                 "wif":
                 self.sanitize(
-                    self.bridge.call("getwif")
+                    round(
+                        self.bridge.call("getwif"),
+                        2
+                    )
                 ),
-
                 "turbidity":
                 self.sanitize(
-                    self.bridge.call("readTurbidityRaw")
+                    round(
+                        self.bridge.call("getturbidity"),
+                        2
+                    )
                 ),
-
                 "density":
                 self.sanitize(
                     round(
@@ -194,21 +160,12 @@ class SensorManager:
             }
 
         except Exception as e:
-
             self.logger.exception(e)
-
             return None
-
-    ###########################################################
-    #
+        
     # Continuous Logger
-    #
-    ###########################################################
-
     def log_continuous(self):
-
         reading = self.readSensors()
-
         if reading is None:
             return
 
@@ -231,61 +188,33 @@ class SensorManager:
         with self._lock:
 
             if self.capture_pending:
-
                 self.capture_samples.append(reading)
-
                 self.logger.info(
-
                     f"Capture Sample "
-
                     f"{len(self.capture_samples)}/"
-
                     f"{CAPTURE_SAMPLE_COUNT}"
-
                 )
 
-                if (
-
-                    len(self.capture_samples)
-
-                    >=
-
-                    CAPTURE_SAMPLE_COUNT
-
-                ):
-
+                if (len(self.capture_samples) >= CAPTURE_SAMPLE_COUNT):
                     self.save_capture()
-
                     self.capture_pending = False
-
                     self.capture_samples = []
-
                     self.logger.info(
                         "Capture Completed."
                     )
 
         self.logger.info(
-
             f"Continuous Reading : {reading}"
-
         )
 
-    ###########################################################
-    #
     # Capture Control
-    #
-    ###########################################################
-
     def trigger_capture(self):
-
         with self._lock:
-
             if self.capture_pending:
 
                 self.logger.info(
                     "Capture already pending."
                 )
-
                 return False
 
             self.logger.info(
@@ -294,7 +223,6 @@ class SensorManager:
             )
 
             self.clear_button_json()
-
             self.capture_samples = []
 
             self.capture_pending = True
@@ -304,59 +232,39 @@ class SensorManager:
     ###########################################################
     #
     # Worker Thread
-    #
-    ###########################################################
 
     def _worker(self):
-
         while self._running:
-
             now = time.time()
 
             if now >= self.next_continuous:
-
                 self.log_continuous()
 
                 self.next_continuous = (
-
                     now +
-
                     CONTINUOUS_INTERVAL
-
                 )
-
             time.sleep(0.25)
 
-    ###########################################################
-    #
     # Public APIs
-    #
-    ###########################################################
 
     def start(self):
-
         ##################################################
         # Load previous history if available
         ##################################################
 
         if os.path.exists("sensor_history.json"):
-
             try:
-
                 with open("sensor_history.json", "r") as fp:
-
                     self.history_cache = json.load(fp)
 
             except Exception as e:
-
                 self.logger.warning(
                     f"Failed to load previous history: {e}"
                 )
-
                 self.history_cache = []
 
         else:
-
             self.history_cache = []
 
         ##################################################
@@ -373,9 +281,8 @@ class SensorManager:
         ##################################################
 
         self._running = True
-
         self.next_continuous = time.time()
-
+        
         self._thread = threading.Thread(
             target=self._worker,
             daemon=True,
@@ -387,19 +294,8 @@ class SensorManager:
     ###########################################################
 
     def stop(self):
-
         self._running = False
-
-        if (
-
-            self._thread is not None
-
-            and
-
-            threading.current_thread() != self._thread
-
-        ):
-
+        if (self._thread is not None and threading.current_thread() != self._thread):
             self._thread.join()
 
         self._thread = None
@@ -408,47 +304,27 @@ class SensorManager:
             "SensorManager Stopped."
         )
 
-    ###########################################################
-    #
     # REST APIs
-    #
-    ###########################################################
-
     def get_latest_history(self, count=10):
-
         return self.history_cache[-count:]
 
-    ###########################################################
-
     def get_latest_capture(self):
-
         if not os.path.exists(
             "sensor_history_button.json"
         ):
-
             return {
-
                 "samples": [],
-
                 "average": {}
-
             }
-
         try:
-
             with open(
                 "sensor_history_button.json",
                 "r"
             ) as fp:
-
                 return json.load(fp)
 
         except Exception:
-
             return {
-
                 "samples": [],
-
                 "average": {}
-
             }
