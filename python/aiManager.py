@@ -144,7 +144,22 @@ class AiManager:
 
             for key in keys:
 
-                values = [float(r[key]) for r in self.window]
+                # Defensive: window entries can predate the
+                # sensorManager plausibility gate (e.g. loaded from
+                # an older sensor_history.json). Skip anything that
+                # isn't a real number instead of letting float()
+                # raise and killing the whole verdict for this cycle.
+                values = [
+                    float(r[key]) for r in self.window
+                    if isinstance(r.get(key), (int, float))
+                ]
+
+                if len(values) < 5:
+                    continue
+
+                current = reading.get(key)
+                if not isinstance(current, (int, float)):
+                    continue
 
                 mean = sum(values) / len(values)
 
@@ -155,7 +170,7 @@ class AiManager:
                 if std < 1e-6:
                     continue
 
-                z = abs(float(reading[key]) - mean) / std
+                z = abs(float(current) - mean) / std
 
                 if z > ANOMALY_Z:
 
@@ -182,6 +197,19 @@ class AiManager:
     ###########################################################
 
     def infer(self, reading):
+
+        # Defense in depth: sensorManager now rejects implausible/
+        # None readings before they're stored, but a reading loaded
+        # from an old sensor_history.json (written before that fix)
+        # could still have a stray None. Fail with a clear message
+        # instead of a cryptic float(None) crash deep in numpy.
+        required = ["temp", "ethanol", "wif", "turbidity", "density"]
+        if not all(isinstance(reading.get(k), (int, float))
+                   for k in required):
+            raise ValueError(
+                f"Cannot classify reading with missing/invalid "
+                f"fields: {reading}"
+            )
 
         result = self.model.predict(reading)
 
@@ -226,7 +254,11 @@ class AiManager:
 
         required = ["temp", "ethanol", "wif", "turbidity", "density"]
 
-        if not all(k in avg for k in required):
+        # Check values are real numbers, not just that the keys
+        # exist — SensorManager.average() can leave a key present
+        # but None if every sample in the capture window was
+        # rejected (e.g. probe out of the fuel for that capture).
+        if not all(isinstance(avg.get(k), (int, float)) for k in required):
 
             return {
 
