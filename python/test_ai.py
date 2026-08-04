@@ -295,6 +295,9 @@ class FakeLogger:
     def info(self, msg):
         pass
 
+    def warning(self, msg):
+        pass
+
     def exception(self, e):
         print(f"  LOGGED EXCEPTION: {e}")
 
@@ -368,6 +371,106 @@ check("ai_history.json holds the verdicts", len(hist) == len(verdicts) or
       len(hist) >= 3, str(len(hist)))
 check("REST payload JSON-serializable",
       json.dumps(current) is not None)
+
+# ------------------------------------------------------------------
+# 7. Robustness against implausible readings ("probe in air",
+#    disconnected sensor, NaN/Inf, stale pre-fix history)
+# ------------------------------------------------------------------
+print("\n[7] Robustness against implausible readings")
+
+import sensorManager as sensorManagerModule
+from sensorManager import SensorManager
+
+
+class ScriptedBridge:
+    """Returns whatever canned value is queued for each RPC name."""
+
+    def __init__(self, values):
+        self.values = values
+
+    def call(self, name, *args):
+        return self.values[name]
+
+
+# 7a. NaN density (e.g. a disconnected density sensor) is rejected,
+# not passed through to crash feature extraction later.
+bad_bridge = ScriptedBridge({
+    "readDS18B20TempC": 30.0,
+    "getethanolPercentage": 10.0,
+    "getwif": 2.0,
+    "readTurbidityRaw": 100,
+    "getdensity": float("nan"),
+})
+sm = SensorManager(bad_bridge, FakeLogger())
+check("NaN density reading is rejected, not crashed",
+      sm.readSensors() is None)
+
+# 7b. A railed-high ethanol reading (stuck ADC / probe not in fuel)
+# is outside 0-100% and gets rejected.
+railed_bridge = ScriptedBridge({
+    "readDS18B20TempC": 25.0,
+    "getethanolPercentage": 4095.0,
+    "getwif": 2.0,
+    "readTurbidityRaw": 100,
+    "getdensity": 750.0,
+})
+sm2 = SensorManager(railed_bridge, FakeLogger())
+check("out-of-range (railed) ethanol reading is rejected",
+      sm2.readSensors() is None)
+
+# 7c. A normal reading still passes through untouched.
+good_bridge = ScriptedBridge({
+    "readDS18B20TempC": 30.0,
+    "getethanolPercentage": 10.0,
+    "getwif": 2.0,
+    "readTurbidityRaw": 100,
+    "getdensity": 750.0,
+})
+sm3 = SensorManager(good_bridge, FakeLogger())
+check("a normal reading is still accepted",
+      sm3.readSensors() is not None)
+
+# 7d. AiManager.infer() fails loudly and clearly (ValueError) on a
+# reading with a missing field, instead of a cryptic numpy crash.
+mgr3 = AiManager(fake_sm, FakeLogger())
+try:
+    mgr3.infer({"temp": 30, "ethanol": 10, "wif": 2,
+                "turbidity": 3, "density": None})
+    check("infer() rejects a None field with ValueError", False,
+          "no exception raised")
+except ValueError:
+    check("infer() rejects a None field with ValueError", True)
+except Exception as e:
+    check("infer() rejects a None field with ValueError", False,
+          f"wrong exception type: {type(e).__name__}: {e}")
+
+# 7e. infer_capture() returns a clean error (not a crash) when a
+# capture's average has a present-but-None field — e.g. every
+# sample in that capture window was rejected as implausible.
+broken_capture = {
+    "timestamp": "t",
+    "samples": [],
+    "average": {"temp": 30, "ethanol": 10, "wif": 2,
+                "turbidity": 3, "density": None},
+}
+result = mgr3.infer_capture(broken_capture)
+check("infer_capture() with a None field returns a clean error",
+      "error" in result, str(result))
+
+# 7f. check_anomaly() tolerates a corrupted historical window entry
+# (e.g. loaded from an old sensor_history.json predating the
+# plausibility gate) instead of crashing the whole verdict cycle.
+mgr4 = AiManager(fake_sm, FakeLogger())
+for i in range(9):
+    mgr4.window.append(dict(good_e10, wif=1 + 0.1 * i))
+mgr4.window.append({"temp": 30, "ethanol": 10, "wif": None,
+                     "turbidity": 3, "density": 738.5})
+try:
+    mgr4.check_anomaly(dict(good_e10, wif=1.5))
+    check("check_anomaly tolerates a corrupted window entry", True)
+except Exception as e:
+    check("check_anomaly tolerates a corrupted window entry", False,
+          f"{type(e).__name__}: {e}")
 
 # ------------------------------------------------------------------
 print(f"\n{'=' * 50}")

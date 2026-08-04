@@ -148,6 +148,31 @@ class SensorManager:
                 return None
         return value
 
+    # Physically-possible ranges for each sensor. A reading outside
+    # these bounds (or missing/NaN, already turned into None by
+    # sanitize()) is rejected before it ever reaches history or the
+    # AI. This is the main guard against garbage from a disconnected
+    # sensor or a probe held in air instead of fuel: values that
+    # float outside a sane liquid-fuel envelope get dropped here
+    # instead of crashing feature extraction downstream (float(None)
+    # raises) or feeding the model an input it was never trained on.
+    PLAUSIBLE_RANGE = {
+        "temp": (-20.0, 150.0),
+        "ethanol": (0.0, 100.0),
+        "wif": (0.0, 100.0),
+        "turbidity": (0.0, 100.0),
+        "density": (500.0, 1000.0),
+    }
+
+    def is_plausible(self, reading):
+        for key, (lo, hi) in self.PLAUSIBLE_RANGE.items():
+            value = reading.get(key)
+            if not isinstance(value, (int, float)):
+                return False
+            if not (lo <= value <= hi):
+                return False
+        return True
+
     def scale_turbidity(self, raw):
         """Raw 12-bit ADC counts (0-4095) -> 0-100 turbidity index
         the AI model was trained on. See TURBIDITY_INVERTED note
@@ -166,7 +191,7 @@ class SensorManager:
 
     def readSensors(self):
         try:
-            return {
+            reading = {
                 "timestamp": self._timestamp(),
                 "temp":
                 self.sanitize(
@@ -198,6 +223,15 @@ class SensorManager:
                     )
                 )
             }
+
+            if not self.is_plausible(reading):
+                self.logger.warning(
+                    f"Rejected implausible sensor reading "
+                    f"(probe in air / disconnected?): {reading}"
+                )
+                return None
+
+            return reading
 
         except Exception as e:
             self.logger.exception(e)
