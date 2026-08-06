@@ -202,8 +202,9 @@ class SensorManager:
                 ),
                 "turbidity":
                 self.sanitize(
-                    self.scale_turbidity(
-                        self.bridge.call("readTurbidityRaw")
+                    round(
+                        self.bridge.call("getturbidity"),
+                        2
                     )
                 ),
                 "density":
