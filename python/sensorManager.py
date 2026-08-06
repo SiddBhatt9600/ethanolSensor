@@ -14,20 +14,26 @@ CAPTURE_INTERVAL = 0.1        # 100 ms
 CAPTURE_SAMPLE_COUNT = 5
 
 # The MCU's readTurbidityRaw() returns raw 12-bit ADC counts
-# (0-4095), but the AI model (features.py / fuel_simulator.py)
-# was trained expecting turbidity on a roughly 0-100 scale. Left
-# unscaled, every real reading reads as an extreme outlier and the
-# model will call everything ADULTERATED regardless of true quality.
-#
-# TURBIDITY_INVERTED: whether higher ADC counts mean CLEARER fuel
-# (common for phototransistor-style turbidity modules) or more
-# turbid fuel. This depends on the specific sensor wiring and has
-# NOT been hardware-verified. Confirm before the demo: dip the
-# probe in clean fuel vs. a deliberately cloudy sample and check
-# which one gives the higher raw ADC reading. If clean fuel reads
-# HIGHER, set this True.
+# (0-4095). scale_turbidity() first converts that to a plain 0-100
+# index (no direction assumed yet).
 TURBIDITY_ADC_MAX = 4095.0
-TURBIDITY_INVERTED = False
+
+# Field calibration (2 Aug 2026, real hardware, real fuel samples):
+# this sensor reads HIGHER when fuel is CLEARER — the opposite of
+# the original guess, and the opposite of the physics simulator's
+# training convention (features.py / fuel_simulator.py train with
+# LOW turbidity = clean, HIGH = dirty). Observed bands on the 0-100
+# scaled index:
+#   >= 35        -> clean
+#   30 - 35      -> suspicious / mild haze
+#   < 30          -> adulterated / heavy particulates
+# calibrate_turbidity() inverts and remaps these observed bands onto
+# the simulator's scale (clean ~0-6, suspect ~12-30, adulterated
+# ~40-100) so the feature reaching the model means what the model
+# was trained to interpret. Re-run the dip test and adjust these
+# three constants if the sensor or wiring changes.
+TURBIDITY_FIELD_CLEAN = 35.0
+TURBIDITY_FIELD_SUSPECT = 30.0
 
 
 class SensorManager:
@@ -51,6 +57,15 @@ class SensorManager:
         # Scheduler
         self.next_continuous = time.time()
         self.next_capture = 0
+
+        # Density is user-entered (phone app / web dashboard), not
+        # read from the board — there is no density sensor on the
+        # MCU. Whatever the user last submitted applies to every
+        # reading (continuous + button capture) until they update
+        # it again, same mental model as "measure once with a
+        # hydrometer, use it for this tank of fuel".
+        self.user_density = None
+        self.user_density_timestamp = None
 
     # Utility Functions
     def _timestamp(self):
@@ -164,6 +179,31 @@ class SensorManager:
         "density": (500.0, 1000.0),
     }
 
+    def set_user_density(self, value):
+        """Called from the REST endpoint the phone app / web
+        dashboard posts a manually-measured density to. No board
+        density sensor exists — this is the only source of density."""
+
+        with self._lock:
+            self.user_density = round(float(value), 2)
+            self.user_density_timestamp = self._timestamp()
+
+        self.logger.info(
+            f"User-supplied density set to {self.user_density} kg/m3"
+        )
+
+        return {
+            "density": self.user_density,
+            "timestamp": self.user_density_timestamp,
+        }
+
+    def get_user_density(self):
+        with self._lock:
+            return {
+                "density": self.user_density,
+                "timestamp": self.user_density_timestamp,
+            }
+
     def is_plausible(self, reading):
         for key, (lo, hi) in self.PLAUSIBLE_RANGE.items():
             value = reading.get(key)
@@ -174,20 +214,40 @@ class SensorManager:
         return True
 
     def scale_turbidity(self, raw):
-        """Raw 12-bit ADC counts (0-4095) -> 0-100 turbidity index
-        the AI model was trained on. See TURBIDITY_INVERTED note
-        above for the one thing that still needs hardware
-        verification."""
+        """Raw 12-bit ADC counts (0-4095) -> plain 0-100 index.
+        No direction/meaning assumed yet — see calibrate_turbidity()
+        for the field-calibrated remap onto the model's convention."""
 
         if raw is None:
             return None
 
         pct = (float(raw) / TURBIDITY_ADC_MAX) * 100.0
 
-        if TURBIDITY_INVERTED:
-            pct = 100.0 - pct
-
         return round(max(0.0, min(100.0, pct)), 2)
+
+    def calibrate_turbidity(self, raw_pct):
+        """Maps the sensor's observed 0-100 turbidity index onto the
+        0-100 turbidity feature the AI model was trained on (LOW =
+        clean, HIGH = dirty), using the field-calibrated bands in
+        TURBIDITY_FIELD_CLEAN / TURBIDITY_FIELD_SUSPECT above."""
+
+        if raw_pct is None:
+            return None
+
+        if raw_pct >= TURBIDITY_FIELD_CLEAN:
+            span = max(1e-6, 100.0 - TURBIDITY_FIELD_CLEAN)
+            frac = max(0.0, min(1.0, (raw_pct - TURBIDITY_FIELD_CLEAN) / span))
+            return round(6.0 - frac * 6.0, 2)                # 35->6, 100->0
+
+        elif raw_pct >= TURBIDITY_FIELD_SUSPECT:
+            span = TURBIDITY_FIELD_CLEAN - TURBIDITY_FIELD_SUSPECT
+            frac = (TURBIDITY_FIELD_CLEAN - raw_pct) / span
+            return round(12.0 + frac * 18.0, 2)               # 35->12, 30->30
+
+        else:
+            span = max(1e-6, TURBIDITY_FIELD_SUSPECT)
+            frac = max(0.0, min(1.0, (TURBIDITY_FIELD_SUSPECT - raw_pct) / span))
+            return round(40.0 + frac * 60.0, 2)               # 30->40, 0->100
 
     def readSensors(self):
         try:
@@ -210,18 +270,15 @@ class SensorManager:
 
                 "turbidity":
                 self.sanitize(
-                    self.scale_turbidity(
-                        self.bridge.call("readTurbidityRaw")
+                    self.calibrate_turbidity(
+                        self.scale_turbidity(
+                            self.bridge.call("readTurbidityRaw")
+                        )
                     )
                 ),
 
-                "density":
-                self.sanitize(
-                    round(
-                        self.bridge.call("getdensity"),
-                        2
-                    )
-                )
+                # User-entered, not board-read — see set_user_density().
+                "density": self.user_density
             }
 
             if not self.is_plausible(reading):

@@ -163,16 +163,6 @@ check("hygroscopic-blend water risk signal present",
           for s in res["explain"]["signals"]),
       str(res["explain"]["signals"]))
 
-# Density sensor not wired yet on the real board -> getdensity()
-# returns a hardcoded 750. Must be flagged, not silently trusted.
-no_density_sensor = {"temp": 30, "ethanol": 10, "wif": 2,
-                      "turbidity": 3, "density": 750.0}
-res = model.predict(no_density_sensor)
-check("hardcoded density placeholder is flagged",
-      any("density sensor not connected" in s
-          for s in res["explain"]["signals"]),
-      str(res["explain"]["signals"]))
-
 # ------------------------------------------------------------------
 # 4b. E20 blend verification (topical: India's E20 rollout)
 # ------------------------------------------------------------------
@@ -392,17 +382,19 @@ class ScriptedBridge:
         return self.values[name]
 
 
-# 7a. NaN density (e.g. a disconnected density sensor) is rejected,
-# not passed through to crash feature extraction later.
+# 7a. A NaN user-submitted density (e.g. a malformed phone-app
+# request) is rejected via is_plausible()'s range check — any
+# comparison against NaN is False, so it fails the bounds check
+# rather than being passed through to crash feature extraction.
 bad_bridge = ScriptedBridge({
     "readDS18B20TempC": 30.0,
     "getethanolPercentage": 10.0,
     "getwif": 2.0,
     "readTurbidityRaw": 100,
-    "getdensity": float("nan"),
 })
 sm = SensorManager(bad_bridge, FakeLogger())
-check("NaN density reading is rejected, not crashed",
+sm.set_user_density(float("nan"))
+check("NaN user-submitted density is rejected, not crashed",
       sm.readSensors() is None)
 
 # 7b. A railed-high ethanol reading (stuck ADC / probe not in fuel)
@@ -412,21 +404,22 @@ railed_bridge = ScriptedBridge({
     "getethanolPercentage": 4095.0,
     "getwif": 2.0,
     "readTurbidityRaw": 100,
-    "getdensity": 750.0,
 })
 sm2 = SensorManager(railed_bridge, FakeLogger())
+sm2.set_user_density(750.0)
 check("out-of-range (railed) ethanol reading is rejected",
       sm2.readSensors() is None)
 
-# 7c. A normal reading still passes through untouched.
+# 7c. A normal reading still passes through untouched, once a user
+# density has been submitted (there is no board density sensor).
 good_bridge = ScriptedBridge({
     "readDS18B20TempC": 30.0,
     "getethanolPercentage": 10.0,
     "getwif": 2.0,
     "readTurbidityRaw": 100,
-    "getdensity": 750.0,
 })
 sm3 = SensorManager(good_bridge, FakeLogger())
+sm3.set_user_density(750.0)
 check("a normal reading is still accepted",
       sm3.readSensors() is not None)
 
@@ -471,6 +464,116 @@ try:
 except Exception as e:
     check("check_anomaly tolerates a corrupted window entry", False,
           f"{type(e).__name__}: {e}")
+
+# ------------------------------------------------------------------
+# 8. Field-feedback fixes (2 Aug 2026): user-entered density,
+#    turbidity field calibration, negative-reading rejection,
+#    anomalies always present when suspicious.
+# ------------------------------------------------------------------
+print("\n[8] Field-feedback fixes")
+
+# 8a. Negative readings are rejected outright (never reach the AI).
+neg_bridge = ScriptedBridge({
+    "readDS18B20TempC": 30.0,
+    "getethanolPercentage": -5.0,
+    "getwif": 2.0,
+    "readTurbidityRaw": 100,
+})
+sm5 = SensorManager(neg_bridge, FakeLogger())
+sm5.set_user_density(750.0)
+check("negative ethanol reading is rejected",
+      sm5.readSensors() is None)
+
+neg_bridge2 = ScriptedBridge({
+    "readDS18B20TempC": 30.0,
+    "getethanolPercentage": 10.0,
+    "getwif": -1.0,
+    "readTurbidityRaw": 100,
+})
+sm6 = SensorManager(neg_bridge2, FakeLogger())
+sm6.set_user_density(750.0)
+check("negative wif reading is rejected",
+      sm6.readSensors() is None)
+
+# 8b. Density is user-entered, not board-read: no density -> no
+# usable reading; after set_user_density() it flows into readSensors().
+density_bridge = ScriptedBridge({
+    "readDS18B20TempC": 30.0,
+    "getethanolPercentage": 10.0,
+    "getwif": 2.0,
+    "readTurbidityRaw": 100,
+})
+sm7 = SensorManager(density_bridge, FakeLogger())
+check("no user density yet -> reading rejected",
+      sm7.readSensors() is None)
+
+sm7.set_user_density(751.5)
+reading = sm7.readSensors()
+check("after set_user_density() the reading carries it",
+      reading is not None and reading["density"] == 751.5,
+      str(reading))
+
+# 8c. Turbidity field calibration (2 Aug 2026 observations):
+# raw >= 35 clean, 30-35 suspicious, < 30 adulterated — and the
+# mapping must be monotonic (higher raw = lower/cleaner feature).
+check("raw 100 (very clean) -> near 0 (simulator's clean floor)",
+      sm.calibrate_turbidity(100.0) < 1.0, str(sm.calibrate_turbidity(100.0)))
+check("raw 35 boundary -> simulator clean ceiling (~6)",
+      abs(sm.calibrate_turbidity(35.0) - 6.0) < 0.1)
+check("raw 32.5 (mid suspicious) -> simulator suspect range",
+      12.0 <= sm.calibrate_turbidity(32.5) <= 30.0,
+      str(sm.calibrate_turbidity(32.5)))
+check("raw 0 (very dirty) -> simulator adulterated ceiling (~100)",
+      sm.calibrate_turbidity(0.0) > 99.0, str(sm.calibrate_turbidity(0.0)))
+check("raw 15 (dirty) -> simulator adulterated range",
+      sm.calibrate_turbidity(15.0) >= 40.0, str(sm.calibrate_turbidity(15.0)))
+check("calibration is monotonic (higher raw = lower/cleaner feature)",
+      sm.calibrate_turbidity(90.0) < sm.calibrate_turbidity(32.0)
+      < sm.calibrate_turbidity(10.0))
+check("None passes through calibrate_turbidity unchanged",
+      sm.calibrate_turbidity(None) is None)
+
+# 8d. Standard density band (725-775 kg/m3) is checked directly,
+# and the retired "density sensor not connected" message is gone.
+in_band = model.predict(dict(good_e10, density=750.0))
+check("density within 725-775 -> no standard-band warning",
+      not any("outside the standard fuel band" in s
+              for s in in_band["explain"]["signals"]),
+      str(in_band["explain"]["signals"]))
+
+out_of_band = model.predict(dict(good_e10, density=800.0))
+check("density outside 725-775 -> standard-band warning",
+      any("outside the standard fuel band" in s
+          for s in out_of_band["explain"]["signals"]),
+      str(out_of_band["explain"]["signals"]))
+
+check("hardcoded-density-placeholder message is retired",
+      not any("density sensor not connected" in s
+              for reading in (good_e10, free_water, kero, watery)
+              for s in model.predict(reading)["explain"]["signals"]))
+
+# 8e. Anomalies must always be present whenever the verdict is not
+# GOOD, even with no drift event (fuel that's consistently bad, not
+# suddenly-changed, produces no z-score spike on its own).
+mgr5 = AiManager(fake_sm, FakeLogger())
+# Fill the drift window with the SAME adulterated reading repeatedly
+# so there is no "change" for z-score drift to catch...
+for i in range(15):
+    mgr5.infer(dict(free_water, timestamp=f"t{i}"))
+# ...then verify the most recent verdict still carries anomalies.
+last_verdict = mgr5.infer(dict(free_water, timestamp="t_last"))
+check("consistently-bad fuel still has non-empty anomalies",
+      len(last_verdict["anomalies"]) > 0, str(last_verdict["anomalies"]))
+check("quality-type anomaly entries are tagged and carry a reason",
+      any(a["type"] == "quality" and a["reason"]
+          for a in last_verdict["anomalies"]),
+      str(last_verdict["anomalies"]))
+
+good_verdict = mgr5.infer(dict(good_e10, timestamp="t_good"))
+quality_anoms = [a for a in good_verdict["anomalies"]
+                 if a["type"] == "quality"]
+check("GOOD verdict does not get synthetic quality anomalies",
+      quality_anoms == [], str(quality_anoms))
 
 # ------------------------------------------------------------------
 print(f"\n{'=' * 50}")

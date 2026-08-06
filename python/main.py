@@ -74,11 +74,37 @@ def get_capture_verdict():
     )
 
 
+def get_user_density():
+    """
+    Returns the last user-submitted density + when it was set.
+    """
+    return sensorManager.get_user_density()
+
+
+def set_user_density(density: float):
+    """
+    Sets the manually-measured density (no board sensor exists —
+    this is entered by the user via the phone app / web dashboard
+    and applies to every reading, continuous and button-capture,
+    until updated again).
+
+    NOTE: this handler's signature (a typed keyword parameter bound
+    from the POST body) follows the same convention this codebase
+    already uses for Bridge.provide() callbacks like
+    record_imu_values() below. It has NOT been verified against the
+    real WebUI framework's POST body-binding behavior — test this
+    one endpoint specifically on the board before relying on it.
+    """
+    return sensorManager.set_user_density(density)
+
+
 ui.expose_api("GET", "/api/sensors", get_sensor_data)
 ui.expose_api("GET", "/api/button_capture", get_button_capture)
 ui.expose_api("GET", "/api/ai/verdicts", get_ai_verdicts)
 ui.expose_api("GET", "/api/ai/current", get_current_verdict)
 ui.expose_api("GET", "/api/ai/capture_verdict", get_capture_verdict)
+ui.expose_api("GET", "/api/user/density", get_user_density)
+ui.expose_api("POST", "/api/user/density", set_user_density)
 
 ###############################################################
 # Bridge callback

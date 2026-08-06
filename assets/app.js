@@ -326,6 +326,98 @@ async function loadButtonCapture()
 
 /*****************************************************************
  *
+ * Measured Density (user input — no board density sensor)
+ *
+ *****************************************************************/
+
+async function loadDensityStatus() {
+
+    try {
+
+        const response = await fetch("/api/user/density");
+        const d = await response.json();
+
+        const statusEl = document.getElementById("densityStatus");
+
+        if (!d || d.density === null || d.density === undefined) {
+
+            statusEl.innerHTML =
+            "No density entered yet — enter a hydrometer/measured " +
+            "reading below. The AI verdict will not appear until " +
+            "this is set (there is no density sensor on the board).";
+
+            return;
+
+        }
+
+        statusEl.innerHTML =
+        `Current density in use: <b>${d.density} kg/m³</b> ` +
+        `(set ${d.timestamp})`;
+
+    }
+
+    catch(err) {
+
+        console.error("Density status API:", err);
+
+    }
+
+}
+
+async function submitDensity() {
+
+    const input = document.getElementById("densityInput");
+    const result = document.getElementById("densityResult");
+
+    const value = parseFloat(input.value);
+
+    if (isNaN(value)) {
+
+        result.innerHTML = "Enter a numeric density value first.";
+        return;
+
+    }
+
+    result.innerHTML = "Submitting…";
+
+    try {
+
+        const response = await fetch("/api/user/density", {
+
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({density: value})
+
+        });
+
+        const d = await response.json();
+
+        if (d.error) {
+
+            result.innerHTML = `Failed: ${d.error}`;
+            return;
+
+        }
+
+        result.innerHTML =
+        `Density set to ${d.density} kg/m³. New verdicts will ` +
+        `use it within ~10 seconds.`;
+
+        loadDensityStatus();
+
+    }
+
+    catch(err) {
+
+        console.error("Density submit API:", err);
+        result.innerHTML = "Submit failed — see console.";
+
+    }
+
+}
+
+/*****************************************************************
+ *
  * AI Verdict Section
  *
  *****************************************************************/
@@ -445,12 +537,14 @@ async function loadAiVerdict() {
 
             anomEl.innerHTML =
 
-            "<b>⚠ Drift alert (possible refuel / quality change):</b><br>" +
+            "<b>⚠ Anomalies / quality flags:</b><br>" +
 
             v.anomalies.map(a =>
 
-                `${a.parameter}: ${a.value} vs baseline ` +
-                `${a.baseline_mean} (z = ${a.z_score})`
+                a.type === "quality"
+                ? a.reason
+                : `drift — ${a.parameter}: ${a.value} vs baseline ` +
+                  `${a.baseline_mean} (z = ${a.z_score})`
 
             ).join("<br>");
 
@@ -502,7 +596,9 @@ async function loadAiHistory() {
 
                 (v.anomalies && v.anomalies.length > 0)
 
-                ? v.anomalies.map(a => a.parameter).join(", ")
+                ? v.anomalies.map(
+                    a => a.type === "quality" ? "quality" : a.parameter
+                  ).join(", ")
 
                 : "—";
 
@@ -597,6 +693,8 @@ async function refreshDashboard()
     await loadSensorData();
 
     await loadButtonCapture();
+
+    loadDensityStatus();
 
     loadAiVerdict();
 
