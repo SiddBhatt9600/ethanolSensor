@@ -81,11 +81,8 @@ class SensorManager:
     ###########################################################
 
     def save_history(self):
-
         self.history_cache = self.history_cache[-MAX_SENSOR_RECORDS:]
-
         with open("sensor_history.json", "w") as fp:
-
             json.dump(
                 self.history_cache,
                 fp,
@@ -95,19 +92,13 @@ class SensorManager:
     ###########################################################
     
     def average(self, key):
-
         values = [
-
             x[key]
-
             for x in self.capture_samples
-
             if x[key] is not None
-
         ]
 
         if not values:
-
             return None
 
         return round(
@@ -116,13 +107,11 @@ class SensorManager:
         )
 
     def save_capture(self):
-
         output = {
             "timestamp": self._timestamp(),
             "samples": self.capture_samples,
 
             "average": {
-
                 "temp":
                 self.average("temp"),
 
@@ -137,9 +126,7 @@ class SensorManager:
 
                 "density":
                 self.average("density")
-
             }
-
         }
 
         with open(
@@ -154,7 +141,6 @@ class SensorManager:
             )
 
     # Sensor Reading
-    #
     ###########################################################
 
     def sanitize(self, value):
@@ -255,30 +241,39 @@ class SensorManager:
                 "timestamp": self._timestamp(),
                 "temp":
                 self.sanitize(
-                    self.bridge.call("readDS18B20TempC")
-                ),
-
-                "ethanol":
-                self.sanitize(
-                    self.bridge.call("getethanolPercentage")
-                ),
-
-                "wif":
-                self.sanitize(
-                    self.bridge.call("getwif")
-                ),
-
-                "turbidity":
-                self.sanitize(
-                    self.calibrate_turbidity(
-                        self.scale_turbidity(
-                            self.bridge.call("readTurbidityRaw")
-                        )
+                    round(
+                        self.bridge.call("readDS18B20TempC"),
+                        2
                     )
                 ),
-
-                # User-entered, not board-read — see set_user_density().
-                "density": self.user_density
+                "ethanol":
+                self.sanitize(
+                    round(
+                        self.bridge.call("getethanolPercentage"),
+                        2
+                    )
+                ),
+                "wif":
+                self.sanitize(
+                    round(
+                        self.bridge.call("getwif"),
+                        2
+                    )
+                ),
+                "turbidity":
+                self.sanitize(
+                    round(
+                        self.bridge.call("getturbidity"),
+                        2
+                    )
+                ),
+                "density":
+                self.sanitize(
+                    round(
+                        self.bridge.call("getdensity"),
+                        2
+                    )
+                )
             }
 
             if not self.is_plausible(reading):
@@ -293,7 +288,6 @@ class SensorManager:
         except Exception as e:
             self.logger.exception(e)
             return None
-        
     # Continuous Logger
     def log_continuous(self):
         reading = self.readSensors()
@@ -319,49 +313,28 @@ class SensorManager:
         with self._lock:
 
             if self.capture_pending:
-
                 self.capture_samples.append(reading)
-
                 self.logger.info(
-
                     f"Capture Sample "
-
                     f"{len(self.capture_samples)}/"
-
                     f"{CAPTURE_SAMPLE_COUNT}"
-
                 )
 
-                if (
-
-                    len(self.capture_samples)
-
-                    >=
-
-                    CAPTURE_SAMPLE_COUNT
-
-                ):
-
+                if (len(self.capture_samples) >= CAPTURE_SAMPLE_COUNT):
                     self.save_capture()
-
                     self.capture_pending = False
-
                     self.capture_samples = []
-
                     self.logger.info(
                         "Capture Completed."
                     )
 
         self.logger.info(
-
             f"Continuous Reading : {reading}"
-
         )
 
     # Capture Control
     def trigger_capture(self):
         with self._lock:
-
             if self.capture_pending:
 
                 self.logger.info(
@@ -393,41 +366,30 @@ class SensorManager:
                 self.log_continuous()
 
                 self.next_continuous = (
-
                     now +
-
                     CONTINUOUS_INTERVAL
-
                 )
-
             time.sleep(0.25)
 
     # Public APIs
 
     def start(self):
-
         ##################################################
         # Load previous history if available
         ##################################################
 
         if os.path.exists("sensor_history.json"):
-
             try:
-
                 with open("sensor_history.json", "r") as fp:
-
                     self.history_cache = json.load(fp)
 
             except Exception as e:
-
                 self.logger.warning(
                     f"Failed to load previous history: {e}"
                 )
-
                 self.history_cache = []
 
         else:
-
             self.history_cache = []
 
         ##################################################
@@ -475,12 +437,10 @@ class SensorManager:
         if not os.path.exists(
             "sensor_history_button.json"
         ):
-
             return {
                 "samples": [],
                 "average": {}
             }
-
         try:
             with open(
                 "sensor_history_button.json",

@@ -18,7 +18,6 @@ JSON_WRITE_INTERVAL = 30         # seconds
 class ImuManager:
 
     def __init__(self, logger, ui=None):
-
         self.logger = logger
         self.ui = ui
         self._running = False
@@ -35,20 +34,16 @@ class ImuManager:
 
     # Timestamp helper
     def timestamp(self):
-
         return datetime.now(
             zoneinfo.ZoneInfo("Asia/Kolkata")
         ).isoformat()
 
     # JSON Writer
     def write_json(self):
-
         with self._lock:
-
             history = list(self.samples)
 
         with open("imu_history.json", "w") as fp:
-
             json.dump(history, fp, indent=4)
 
     # Main Recording API
@@ -72,7 +67,6 @@ class ImuManager:
 
         # Push to Web Dashboard
         if self.ui is not None:
-
             try:
                 self.ui.send_message(
                     "imu_sample",
@@ -101,7 +95,9 @@ class ImuManager:
     def get_statistics(self):
         with self._lock:
             if len(self.samples) == 0:
-                return {"sampleCount": 0}
+                return {
+                    "sampleCount": 0
+                }
 
             ax = [x["ax"] for x in self.samples]
             ay = [x["ay"] for x in self.samples]
@@ -127,7 +123,6 @@ class ImuManager:
         return {
             "sampleCount": len(ax),
             "totalSamples": self.total_samples,
-
             "accelerometer": {
                 "x": stats(ax),
                 "y": stats(ay),
@@ -157,6 +152,7 @@ class ImuManager:
         while self._running:
             try:
                 now = time.time()
+                #
                 # Flush RAM buffer to disk every 30 seconds
                 if (now - self.last_write) >= JSON_WRITE_INTERVAL:
                     self.write_json()
@@ -170,7 +166,6 @@ class ImuManager:
                 time.sleep(1)
     
             except Exception as e:
-    
                 self.logger.exception(
                     f"ImuManager Worker Error: {e}"
                 )
