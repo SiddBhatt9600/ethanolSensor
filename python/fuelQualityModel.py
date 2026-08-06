@@ -18,13 +18,15 @@ import numpy as np
 
 from features import extract, expected_density15, FEATURE_NAMES
 
-# The MCU's getdensity() is currently hardcoded to 750 (no density
-# sensor wired yet). Flag readings that land suspiciously close to
-# that fixed value so the dashboard doesn't imply precision the
-# hardware isn't providing. Remove once a real density sensor is
-# integrated.
-_HARDCODED_DENSITY_PLACEHOLDER = 750.0
-_HARDCODED_DENSITY_TOLERANCE = 0.05
+# There is no density sensor on the board — density is measured by
+# the user (e.g. with a hydrometer) and entered via the phone app or
+# web dashboard (SensorManager.set_user_density()). Standard petrol
+# density at 15C sits in the 725-775 kg/m3 band (BIS IS 2796); this
+# is a simple, direct sanity check on the user-entered value,
+# independent of the more nuanced ethanol-vs-density residual
+# physics below (which still runs and remains the sharper kerosene
+# detector — this is an additional, easy-to-explain check).
+STANDARD_DENSITY_BAND = (725.0, 775.0)
 
 # Standard Indian pump blends: nominal ethanol % and accepted band.
 # E20 is the current national rollout blend; verifying the pump
@@ -143,11 +145,14 @@ class FuelQualityModel:
 
         s = []
 
-        if abs(float(reading["density"]) - _HARDCODED_DENSITY_PLACEHOLDER) \
-                < _HARDCODED_DENSITY_TOLERANCE:
-            s.append("density sensor not connected — reading a fixed "
-                     "reference value, kerosene/solvent detection is "
-                     "degraded until it is wired up")
+        density_val = float(reading["density"])
+        if not (STANDARD_DENSITY_BAND[0] <= density_val <= STANDARD_DENSITY_BAND[1]):
+            s.append(
+                f"density {density_val:.1f} kg/m3 outside the standard "
+                f"fuel band ({STANDARD_DENSITY_BAND[0]:.0f}-"
+                f"{STANDARD_DENSITY_BAND[1]:.0f} kg/m3) — possible "
+                f"adulteration"
+            )
 
         eth_val = float(reading["ethanol"])
         wif_val = float(reading["wif"])

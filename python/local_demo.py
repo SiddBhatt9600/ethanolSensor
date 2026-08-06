@@ -67,6 +67,9 @@ class MockBridge:
         self._last_rotate = time.time()
         self._last_reading = 0.0
         self._lock = threading.Lock()
+        # Set after construction (needs sensor_manager to exist
+        # first) — called whenever the demo scenario changes.
+        self.on_density_change = None
         self._refresh()
 
     def set_mode(self, mode):
@@ -76,6 +79,13 @@ class MockBridge:
                 self.scenario = mode
             self._last_rotate = time.time()
             self._refresh()
+
+        # Simulate "the user re-measured density with a hydrometer
+        # and re-entered it" for this new scenario, same as pressing
+        # submit on the phone/dashboard density field would do — so
+        # switching scenarios in the demo stays a one-command action.
+        if self.on_density_change is not None:
+            self.on_density_change(self.true_density())
 
     def _refresh(self):
         temp = random.uniform(24, 42)
@@ -124,6 +134,7 @@ class MockBridge:
             idx = self.SCENARIOS.index(self.scenario)
             self.scenario = self.SCENARIOS[(idx + 1) % 3]
             print(f"[demo] scenario -> {self.scenario.upper()}")
+            self._refresh()
         if now - self._last_reading >= 2.0:
             self._last_reading = now
             self._refresh()
@@ -139,17 +150,34 @@ class MockBridge:
                 # SensorManager.scale_turbidity() converts back to
                 # the 0-100 index. Emulate that here so the demo
                 # exercises the same scaling path as the board.
-                return int(self._reading["turbidity"] / 100.0 * 4095)
+                #
+                # NOTE: this feeds the OLD "low=clean" convention
+                # into the ADC->pct conversion, but the real board's
+                # sensor was field-calibrated the opposite way (see
+                # sensorManager.TURBIDITY_FIELD_CLEAN). To exercise
+                # that exact calibrated path in the demo, invert here
+                # so a "clean" scenario produces a raw ADC count that
+                # scale_turbidity()+calibrate_turbidity() round-trips
+                # correctly back to a low (clean) model feature.
+                inverted_pct = 100.0 - self._reading["turbidity"]
+                return int(inverted_pct / 100.0 * 4095)
             key = {
                 "readDS18B20TempC": "temp",
                 "getethanolPercentage": "ethanol",
                 "getwif": "wif",
-                "getdensity": "density",
             }[name]
-            value = self._reading[key]
-            if key == "density":
-                value += random.uniform(-0.5, 0.5)
-            return value
+            return self._reading[key]
+
+    def true_density(self):
+        """The scenario's 'real' density — what a person measuring
+        this batch of fuel with a hydrometer would read. Used by the
+        demo to auto-submit a plausible user_density on scenario
+        changes, so the demo doesn't require a manual curl for every
+        switch (mirrors what /api/user/density is for on a phone)."""
+        with self._lock:
+            return round(
+                self._reading["density"] + random.uniform(-0.5, 0.5), 2
+            )
 
 
 class ConsoleLogger:
@@ -214,6 +242,14 @@ sensor_manager.start()
 ai_manager = AiManager(sensor_manager, logger)
 ai_manager.set_imu_manager(FakeImuManager())
 ai_manager.start()
+
+# Density has no board sensor — it's user-entered. Wire the demo's
+# scenario engine to auto-submit a plausible value on every scenario
+# change (mirroring what a phone/dashboard submit would do) and seed
+# an initial one now so the demo works immediately without requiring
+# a manual density submission first.
+bridge.on_density_change = sensor_manager.set_user_density
+sensor_manager.set_user_density(bridge.true_density())
 
 
 # ------------------------------------------------------------------
@@ -307,6 +343,29 @@ class DemoHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return
+
+        if path == "/api/user/density":
+            return self._json(sensor_manager.get_user_density())
+
+        self._json({"error": "not found"}, 404)
+
+    def do_POST(self):
+        parsed = urlparse(self.path)
+        path = parsed.path
+
+        if path == "/api/user/density":
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length) if length else b"{}"
+            try:
+                payload = json.loads(body or b"{}")
+                density = float(payload["density"])
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+                return self._json(
+                    {"error": "expected JSON body {\"density\": <number>}"},
+                    400,
+                )
+
+            return self._json(sensor_manager.set_user_density(density))
 
         self._json({"error": "not found"}, 404)
 

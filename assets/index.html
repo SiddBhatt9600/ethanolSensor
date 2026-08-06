@@ -39,6 +39,36 @@
 
 
 <!-- ===================================================== -->
+<!-- MEASURED DENSITY (USER INPUT)                          -->
+<!-- ===================================================== -->
+
+<section class="aiSection">
+
+    <h2>Measured Fuel Density</h2>
+
+    <div id="densityStatus" class="densityStatus">
+        No density entered yet — enter a hydrometer/measured
+        reading below. The AI verdict will not appear until this
+        is set (there is no density sensor on the board).
+    </div>
+
+    <div class="densityInputRow">
+
+        <input type="number" id="densityInput" step="0.1"
+               placeholder="e.g. 751.2 (kg/m³, standard band 725-775)">
+
+        <button id="densitySubmitBtn" onclick="submitDensity()">
+            Submit
+        </button>
+
+    </div>
+
+    <div id="densityResult"></div>
+
+</section>
+
+
+<!-- ===================================================== -->
 <!-- AI FUEL QUALITY VERDICT                               -->
 <!-- ===================================================== -->
 

@@ -176,13 +176,17 @@ class AiManager:
 
                     anomalies.append({
 
+                        "type": "drift",
+
                         "parameter": key,
 
                         "z_score": round(z, 2),
 
                         "baseline_mean": round(mean, 2),
 
-                        "value": round(float(reading[key]), 2)
+                        "value": round(float(reading[key]), 2),
+
+                        "reason": None
 
                     })
 
@@ -214,6 +218,26 @@ class AiManager:
         result = self.model.predict(reading)
 
         anomalies = self.check_anomaly(reading)
+
+        # Anomalies must always be present whenever there is any
+        # suspicion or adulteration. Drift (z-score) anomalies only
+        # fire on a SUDDEN change against the rolling baseline, so
+        # fuel that has been consistently bad for a while (no drift
+        # event, it just IS the new baseline) would otherwise show
+        # an empty anomalies list next to a SUSPECT/ADULTERATED
+        # verdict. Fold in the same reasons already computed for the
+        # "Why" explanation as "quality"-type entries whenever the
+        # verdict isn't GOOD, so the list is never misleadingly empty.
+        if result["verdict"] != "GOOD":
+            for reason in result["explain"]["signals"]:
+                anomalies.append({
+                    "type": "quality",
+                    "parameter": "quality",
+                    "z_score": None,
+                    "baseline_mean": None,
+                    "value": None,
+                    "reason": reason,
+                })
 
         mileage = self._mileage(reading, result["verdict"])
 
