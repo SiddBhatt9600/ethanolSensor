@@ -175,9 +175,6 @@ void setupBMI323() {
 }
 
 // ---------------- DS18B20 read ----------------
-// Why do we need to keep this one specifically before 
-// setup? It makes no sense.......
-// Others getValues works just fine being after setup
 float readDS18B20TempC() {
   if (!ow_reset()) {
     return NAN;
@@ -204,43 +201,34 @@ float readDS18B20TempC() {
   return rawTemp / 16.0f;
 }
 
-// I will keep this before setup as well
-// JUST IN CASE
+// ---------------- Turbidity analog read on A4 ----------------
+
 int readTurbidityRaw() {
   return analogRead(TURBIDITY_PIN);
 }
 
-float rawToVoltage(int raw) {
+float readTurbidityVoltage() {
+  int raw = readTurbidityRaw();
   return ((float)raw * ADC_REF_VOLTAGE) / ADC_MAX_COUNTS;
 }
 
-// ---------------- Water-in-Fuel analog read ----------------
- 
-// int readWifRaw() {
-//   return analogRead(WIF_ANALOG_PIN);
-// }
- 
-// float readWifVoltage() {
-//   int raw = readWifRaw();
-//   return ((float)raw * ADC_REF_VOLTAGE) / ADC_MAX_COUNTS;
-// }
- 
-// // Mapping: 0V = 0%, 3.3V = 100%
-// float readWifPercent() {
-//   float voltage = readWifVoltage();
- 
-//   float percent = (voltage / ADC_REF_VOLTAGE) * 100.0f;
- 
-//   if (percent < 0.0f) {
-//     percent = 0.0f;
-//   }
- 
-//   if (percent > 100.0f) {
-//     percent = 100.0f;
-//   }
- 
-//   return percent;
-// }
+// Simple 0-3.3V to 0-100% mapping
+// 0V = 0%, 3.3V = 100%
+float readTurbidityPercent() {
+  float voltage = readTurbidityVoltage();
+
+  float percent = (voltage / ADC_REF_VOLTAGE) * 100.0f;
+
+  if (percent < 0.0f) {
+    percent = 0.0f;
+  }
+
+  if (percent > 100.0f) {
+    percent = 100.0f;
+  }
+
+  return percent;
+}
 
 // =========== LINEARIZED/Scaled to 0-100 ============
 int readWifRaw() {
@@ -356,23 +344,26 @@ void setup() {
   Bridge.provide_safe("readDS18B20TempC", readDS18B20TempC);
   Bridge.provide_safe("getethanolPercentage", getethanolPercentage);
   Bridge.provide_safe("getwif", getwif);
-  Bridge.provide_safe("readTurbidityRaw", readTurbidityRaw);
+  Bridge.provide_safe("getturbidity", getturbidity);
   Bridge.provide_safe("getdensity", getdensity);
 
-  // NOT USING RIGHT NOW
+  // NOT USING RIGHT NOW. ONLY FOR DEBUGGING PUROPOSES
+#ifdef BUILD_DEBUG
   Bridge.provide_safe("poll_sensors", poll_sensors);
-
+  
   Serial.println("MCU ready: Turbidity + DS18B20 polling");
   Serial.println("MPU can call: poll_sensors");
+#endif
 }
 
 // ---------------- Turbidity read ----------------
-// NOT USING RIGHT NOW
+// NOT USING RIGHT NOW. ONLY FOR DEBUGGING PUROPOSES
+#ifdef BUILD_DEBUG
 String poll_sensors() {
   uint32_t t_ms = millis();
 
   int turb_raw = readTurbidityRaw();
-  float turb_v = rawToVoltage(turb_raw);
+  float turb_v = readTurbidityVoltage();
 
   float temp_c = readDS18B20TempC();
 
@@ -396,6 +387,7 @@ String poll_sensors() {
 
   return out;
 }
+#endif
 
 int getHbState() {
   hbCounter++;
@@ -413,6 +405,10 @@ float getwif() {
 float getdensity() {
   // Hardcoded
   return 750;
+}
+
+float getturbidity() {
+  return readTurbidityPercent();
 }
 
 
