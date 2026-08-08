@@ -75,8 +75,9 @@ class SensorManager:
 
     # JSON Helpers
     def clear_button_json(self):
+
         with open("sensor_history_button.json", "w") as fp:
-            json.dump([], fp, indent=4)
+            json.dump({"samples": [], "average": {}}, fp, indent=4)
 
     ###########################################################
 
@@ -202,7 +203,14 @@ class SensorManager:
     def scale_turbidity(self, raw):
         """Raw 12-bit ADC counts (0-4095) -> plain 0-100 index.
         No direction/meaning assumed yet — see calibrate_turbidity()
-        for the field-calibrated remap onto the model's convention."""
+        for the field-calibrated remap onto the model's convention.
+
+        NOT currently called from readSensors(): the MCU's
+        getturbidity() already does this ADC->0-100 scaling itself
+        (readTurbidityPercent() in sketch.ino), so the bridge value
+        readSensors() receives is already a plain 0-100 index. Kept
+        here in case the MCU ever goes back to exposing a raw ADC
+        RPC (e.g. readTurbidityRaw)."""
 
         if raw is None:
             return None
@@ -260,20 +268,15 @@ class SensorManager:
                         2
                     )
                 ),
+
                 "turbidity":
                 self.sanitize(
-                    round(
-                        self.bridge.call("getturbidity"),
-                        2
+                    self.calibrate_turbidity(
+                        self.bridge.call("getturbidity")
                     )
                 ),
-                "density":
-                self.sanitize(
-                    round(
-                        self.bridge.call("getdensity"),
-                        2
-                    )
-                )
+
+                "density": self.user_density
             }
 
             if not self.is_plausible(reading):
@@ -434,22 +437,23 @@ class SensorManager:
         return self.history_cache[-count:]
 
     def get_latest_capture(self):
+        empty = {"samples": [], "average": {}}
+
         if not os.path.exists(
             "sensor_history_button.json"
         ):
-            return {
-                "samples": [],
-                "average": {}
-            }
+            return empty
         try:
             with open(
                 "sensor_history_button.json",
                 "r"
             ) as fp:
-                return json.load(fp)
+                data = json.load(fp)
+
+            if not isinstance(data, dict):
+                return empty
+
+            return data
 
         except Exception:
-            return {
-                "samples": [],
-                "average": {}
-            }
+            return empty

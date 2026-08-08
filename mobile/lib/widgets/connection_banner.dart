@@ -24,22 +24,34 @@ class ConnectionBanner extends StatelessWidget {
             : 'Disconnected · ${connection.baseUrl}';
 
     return SectionCard(
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.circle, size: 12, color: connected ? AppColors.good : AppColors.bad),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: connected ? AppColors.good : AppColors.textMuted,
-                fontWeight: FontWeight.bold,
+          Row(
+            children: [
+              Icon(Icons.circle, size: 12, color: connected ? AppColors.good : AppColors.bad),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: connected ? AppColors.good : AppColors.textMuted,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              overflow: TextOverflow.ellipsis,
-            ),
+              if (appState.heartbeat != null)
+                Text('HB ${appState.heartbeat!.heartbeat}', style: const TextStyle(color: AppColors.textMuted)),
+            ],
           ),
-          if (appState.heartbeat != null)
-            Text('HB ${appState.heartbeat!.heartbeat}', style: const TextStyle(color: AppColors.textMuted)),
+          if (!connected && hasTarget && appState.lastError != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              appState.lastError!,
+              style: const TextStyle(color: AppColors.bad, fontSize: 11),
+            ),
+          ],
         ],
       ),
     );
