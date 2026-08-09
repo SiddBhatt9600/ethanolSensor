@@ -145,22 +145,17 @@ class MockBridge:
             if name == "getHbState":
                 self._hb += 1
                 return self._hb
-            if name == "readTurbidityRaw":
-                # Real MCU returns raw 12-bit ADC counts (0-4095);
-                # SensorManager.scale_turbidity() converts back to
-                # the 0-100 index. Emulate that here so the demo
-                # exercises the same scaling path as the board.
-                #
-                # NOTE: this feeds the OLD "low=clean" convention
-                # into the ADC->pct conversion, but the real board's
-                # sensor was field-calibrated the opposite way (see
-                # sensorManager.TURBIDITY_FIELD_CLEAN). To exercise
-                # that exact calibrated path in the demo, invert here
-                # so a "clean" scenario produces a raw ADC count that
-                # scale_turbidity()+calibrate_turbidity() round-trips
-                # correctly back to a low (clean) model feature.
-                inverted_pct = 100.0 - self._reading["turbidity"]
-                return int(inverted_pct / 100.0 * 4095)
+            if name == "getturbidity":
+                # The real MCU's getturbidity() already returns a
+                # plain 0-100 index (readTurbidityPercent() does the
+                # ADC->percent scaling on-device — see sketch.ino).
+                # self._reading["turbidity"] follows the simulator's
+                # low=clean convention; invert it to the real
+                # sensor's field-calibrated high=clean convention
+                # (sensorManager.TURBIDITY_FIELD_CLEAN) so
+                # calibrate_turbidity() on the receiving end round-
+                # trips correctly back to a low (clean) model feature.
+                return round(100.0 - self._reading["turbidity"], 2)
             key = {
                 "readDS18B20TempC": "temp",
                 "getethanolPercentage": "ethanol",
@@ -183,6 +178,9 @@ class MockBridge:
 class ConsoleLogger:
     def info(self, msg):
         print(f"[info] {msg}")
+
+    def warning(self, msg):
+        print(f"[warn] {msg}")
 
     def exception(self, e):
         import traceback
@@ -264,11 +262,31 @@ class DemoHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass                                   # keep console readable
 
+    def _cors_headers(self):
+        # The Flutter web app (Chrome, served from its own dev-server
+        # origin) and the dashboard opened from a different port both
+        # call this server via browser fetch(), which enforces CORS.
+        # Without these headers every request fails client-side with
+        # a generic "Failed to fetch" — curl/native apps are unaffected
+        # since CORS is a browser-only restriction, which is why this
+        # can look fine from the command line and still break the UI.
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
+    def do_OPTIONS(self):
+        # Preflight request the browser sends before a POST with a
+        # JSON body (submitDensity() in the phone app / dashboard).
+        self.send_response(204)
+        self._cors_headers()
+        self.end_headers()
+
     def _json(self, payload, status=200):
         body = json.dumps(payload).encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
+        self._cors_headers()
         self.end_headers()
         self.wfile.write(body)
 
@@ -340,6 +358,7 @@ class DemoHandler(BaseHTTPRequestHandler):
             self.send_header(
                 "Content-Type", MIME.get(ext, "application/octet-stream"))
             self.send_header("Content-Length", str(len(body)))
+            self._cors_headers()
             self.end_headers()
             self.wfile.write(body)
             return

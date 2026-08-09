@@ -200,6 +200,35 @@ class AiManager:
     #
     ###########################################################
 
+    def _awaiting_density_verdict(self, reading):
+        """Density is user-entered (no board sensor); until the user
+        submits one, temp/ethanol/wif/turbidity still update live but
+        there is nothing to classify yet. Returning this explicit
+        placeholder (same shape as a real verdict) instead of just
+        skipping the cycle keeps the dashboard honest — it shows
+        "enter density" rather than silently re-displaying whatever
+        verdict happened to be computed before density went missing."""
+
+        return {
+            "timestamp": self._timestamp(),
+            "reading": reading,
+            "verdict": "AWAITING_DENSITY",
+            "confidence": 0.0,
+            "probs": {"GOOD": 0.0, "SUSPECT": 0.0, "ADULTERATED": 0.0},
+            "blend": None,
+            "explain": {
+                "density15": None,
+                "expected_density15": None,
+                "rho_residual": None,
+                "signals": [
+                    "Enter fuel density (hydrometer reading) from "
+                    "the app to get an AI verdict."
+                ],
+            },
+            "anomalies": [],
+            "mileage": None,
+        }
+
     def infer(self, reading):
 
         # Defense in depth: sensorManager now rejects implausible/
@@ -338,7 +367,10 @@ class AiManager:
 
                     try:
 
-                        verdict = self.infer(reading)
+                        if reading.get("density") is None:
+                            verdict = self._awaiting_density_verdict(reading)
+                        else:
+                            verdict = self.infer(reading)
 
                         with self._lock:
 

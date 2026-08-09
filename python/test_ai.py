@@ -196,6 +196,9 @@ class _NullLogger:
     def info(self, *a, **k):
         pass
 
+    def warning(self, *a, **k):
+        pass
+
     def exception(self, *a, **k):
         pass
 
@@ -383,19 +386,24 @@ class ScriptedBridge:
 
 
 # 7a. A NaN user-submitted density (e.g. a malformed phone-app
-# request) is rejected via is_plausible()'s range check — any
-# comparison against NaN is False, so it fails the bounds check
-# rather than being passed through to crash feature extraction.
+# request) is sanitized to None by sanitize_density() rather than
+# crashing feature extraction — but it must NOT drop the rest of an
+# otherwise-valid reading, since density has no board sensor and
+# gating everything on it used to freeze the whole dashboard.
 bad_bridge = ScriptedBridge({
     "readDS18B20TempC": 30.0,
     "getethanolPercentage": 10.0,
     "getwif": 2.0,
-    "readTurbidityRaw": 100,
+    "getturbidity": 100,
 })
-sm = SensorManager(bad_bridge, FakeLogger())
+sm = SensorManager(bad_bridge, FakeLogger(), density_file="test_density_7a.json")
 sm.set_user_density(float("nan"))
-check("NaN user-submitted density is rejected, not crashed",
-      sm.readSensors() is None)
+nan_reading = sm.readSensors()
+check("NaN user-submitted density does not crash readSensors()",
+      nan_reading is not None, str(nan_reading))
+check("NaN user-submitted density is sanitized to None",
+      nan_reading is not None and nan_reading["density"] is None,
+      str(nan_reading))
 
 # 7b. A railed-high ethanol reading (stuck ADC / probe not in fuel)
 # is outside 0-100% and gets rejected.
@@ -403,9 +411,9 @@ railed_bridge = ScriptedBridge({
     "readDS18B20TempC": 25.0,
     "getethanolPercentage": 4095.0,
     "getwif": 2.0,
-    "readTurbidityRaw": 100,
+    "getturbidity": 100,
 })
-sm2 = SensorManager(railed_bridge, FakeLogger())
+sm2 = SensorManager(railed_bridge, FakeLogger(), density_file="test_density_7b.json")
 sm2.set_user_density(750.0)
 check("out-of-range (railed) ethanol reading is rejected",
       sm2.readSensors() is None)
@@ -416,9 +424,9 @@ good_bridge = ScriptedBridge({
     "readDS18B20TempC": 30.0,
     "getethanolPercentage": 10.0,
     "getwif": 2.0,
-    "readTurbidityRaw": 100,
+    "getturbidity": 100,
 })
-sm3 = SensorManager(good_bridge, FakeLogger())
+sm3 = SensorManager(good_bridge, FakeLogger(), density_file="test_density_7c.json")
 sm3.set_user_density(750.0)
 check("a normal reading is still accepted",
       sm3.readSensors() is not None)
@@ -477,9 +485,9 @@ neg_bridge = ScriptedBridge({
     "readDS18B20TempC": 30.0,
     "getethanolPercentage": -5.0,
     "getwif": 2.0,
-    "readTurbidityRaw": 100,
+    "getturbidity": 100,
 })
-sm5 = SensorManager(neg_bridge, FakeLogger())
+sm5 = SensorManager(neg_bridge, FakeLogger(), density_file="test_density_8a.json")
 sm5.set_user_density(750.0)
 check("negative ethanol reading is rejected",
       sm5.readSensors() is None)
@@ -488,24 +496,32 @@ neg_bridge2 = ScriptedBridge({
     "readDS18B20TempC": 30.0,
     "getethanolPercentage": 10.0,
     "getwif": -1.0,
-    "readTurbidityRaw": 100,
+    "getturbidity": 100,
 })
-sm6 = SensorManager(neg_bridge2, FakeLogger())
+sm6 = SensorManager(neg_bridge2, FakeLogger(), density_file="test_density_8a2.json")
 sm6.set_user_density(750.0)
 check("negative wif reading is rejected",
       sm6.readSensors() is None)
 
-# 8b. Density is user-entered, not board-read: no density -> no
-# usable reading; after set_user_density() it flows into readSensors().
+# 8b. Density is user-entered, not board-read: with no density set
+# yet, temp/ethanol/wif/turbidity still come through live (density
+# is None) — it must NOT block the rest of the reading, since that
+# used to freeze the whole dashboard on stale cached data until the
+# user resubmitted density. After set_user_density(), density flows
+# into readSensors() too.
 density_bridge = ScriptedBridge({
     "readDS18B20TempC": 30.0,
     "getethanolPercentage": 10.0,
     "getwif": 2.0,
-    "readTurbidityRaw": 100,
+    "getturbidity": 100,
 })
-sm7 = SensorManager(density_bridge, FakeLogger())
-check("no user density yet -> reading rejected",
-      sm7.readSensors() is None)
+sm7 = SensorManager(density_bridge, FakeLogger(), density_file="test_density_8b.json")
+no_density_reading = sm7.readSensors()
+check("no user density yet -> reading still accepted",
+      no_density_reading is not None, str(no_density_reading))
+check("no user density yet -> density field is None",
+      no_density_reading is not None and no_density_reading["density"] is None,
+      str(no_density_reading))
 
 sm7.set_user_density(751.5)
 reading = sm7.readSensors()
@@ -574,6 +590,51 @@ quality_anoms = [a for a in good_verdict["anomalies"]
                  if a["type"] == "quality"]
 check("GOOD verdict does not get synthetic quality anomalies",
       quality_anoms == [], str(quality_anoms))
+
+# ------------------------------------------------------------------
+# 9. Button-capture JSON shape (regression: found via the Flutter
+#    app's typed JSON parsing, which crashes on a List where a Map
+#    is expected — the loosely-typed web dashboard JS silently
+#    tolerated the same bug for a long time before that).
+# ------------------------------------------------------------------
+print("\n[9] Button-capture JSON shape")
+
+import tempfile
+
+with tempfile.TemporaryDirectory() as tmpdir:
+    prev_cwd = os.getcwd()
+    os.chdir(tmpdir)
+    try:
+        sm8 = SensorManager(ScriptedBridge({}), FakeLogger())
+
+        # Fresh start (no capture yet, mirrors right after start() or
+        # a just-triggered capture): must be the object shape, not [].
+        sm8.clear_button_json()
+        capture = sm8.get_latest_capture()
+        check("fresh capture is a dict, not a bare list",
+              isinstance(capture, dict), str(capture))
+        check("fresh capture has samples/average keys",
+              capture == {"samples": [], "average": {}}, str(capture))
+
+        # Simulate an old on-disk file with the buggy [] shape —
+        # get_latest_capture() must normalize it, not propagate it.
+        with open("sensor_history_button.json", "w") as fp:
+            json.dump([], fp)
+        capture2 = sm8.get_latest_capture()
+        check("stale bare-list file on disk is normalized to a dict",
+              isinstance(capture2, dict), str(capture2))
+    finally:
+        os.chdir(prev_cwd)
+
+# ------------------------------------------------------------------
+# Cleanup: remove the isolated per-test density files created above
+# so repeated runs don't leave stray artifacts in the working dir.
+for _f in (
+    "test_density_7a.json", "test_density_7b.json", "test_density_7c.json",
+    "test_density_8a.json", "test_density_8a2.json", "test_density_8b.json",
+):
+    if os.path.exists(_f):
+        os.remove(_f)
 
 # ------------------------------------------------------------------
 print(f"\n{'=' * 50}")
