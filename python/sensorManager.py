@@ -35,12 +35,23 @@ TURBIDITY_ADC_MAX = 4095.0
 TURBIDITY_FIELD_CLEAN = 35.0
 TURBIDITY_FIELD_SUSPECT = 30.0
 
+# User-submitted density is kept in memory (SensorManager.user_density)
+# but also mirrored to this file so a process restart during a demo
+# doesn't silently drop back to "no density entered" and freeze the
+# AI verdict on a stale cached reading.
+USER_DENSITY_FILE = "user_density.json"
+
 
 class SensorManager:
 
-    def __init__(self, bridge, logger):
+    def __init__(self, bridge, logger, density_file=None):
         self.bridge = bridge
         self.logger = logger
+
+        # Overridable so tests can point separate SensorManager
+        # instances at isolated files instead of sharing (and
+        # leaking state through) the real USER_DENSITY_FILE.
+        self.density_file = density_file or USER_DENSITY_FILE
 
         self._running = False
         self._thread = None
@@ -66,6 +77,8 @@ class SensorManager:
         # hydrometer, use it for this tank of fuel".
         self.user_density = None
         self.user_density_timestamp = None
+
+        self._load_user_density()
 
     # Utility Functions
     def _timestamp(self):
@@ -150,30 +163,77 @@ class SensorManager:
                 return None
         return value
 
-    # Physically-possible ranges for each sensor. A reading outside
-    # these bounds (or missing/NaN, already turned into None by
-    # sanitize()) is rejected before it ever reaches history or the
-    # AI. This is the main guard against garbage from a disconnected
-    # sensor or a probe held in air instead of fuel: values that
-    # float outside a sane liquid-fuel envelope get dropped here
-    # instead of crashing feature extraction downstream (float(None)
-    # raises) or feeding the model an input it was never trained on.
-    PLAUSIBLE_RANGE = {
+    # Physically-possible ranges for the board-read sensors. A
+    # reading outside these bounds (or missing/NaN, already turned
+    # into None by sanitize()) is rejected before it ever reaches
+    # history or the AI. This is the main guard against garbage from
+    # a disconnected sensor or a probe held in air instead of fuel:
+    # values that float outside a sane liquid-fuel envelope get
+    # dropped here instead of crashing feature extraction downstream
+    # (float(None) raises) or feeding the model an input it was
+    # never trained on.
+    #
+    # Density is deliberately NOT in this dict: it is user-entered
+    # (no board sensor exists for it), so it must not gate whether
+    # the other four live sensor readings get stored/displayed. A
+    # reading with no density yet is still a real, valid sensor
+    # reading — it just can't be scored by the AI until density is
+    # supplied (see AiManager). Gating everything on density used to
+    # mean that after any restart (density resets to unset) every
+    # continuous reading was rejected outright, freezing the whole
+    # dashboard on stale cached data.
+    CORE_PLAUSIBLE_RANGE = {
         "temp": (-20.0, 150.0),
         "ethanol": (0.0, 100.0),
         "wif": (0.0, 100.0),
         "turbidity": (0.0, 100.0),
-        "density": (500.0, 1000.0),
     }
+
+    # Sanity band for a *user-entered* density value — independent of
+    # the tighter 725-775 kg/m3 "standard fuel" band used for the
+    # actual adulteration judgement (see fuelQualityModel.
+    # STANDARD_DENSITY_BAND). This one only exists to catch obvious
+    # fat-finger/garbage entries (e.g. a unit mixup); it does not
+    # reject the rest of the reading, only the density field itself.
+    DENSITY_SANITY_RANGE = (500.0, 1000.0)
+
+    def _load_user_density(self):
+        if not os.path.exists(self.density_file):
+            return
+
+        try:
+            with open(self.density_file, "r") as fp:
+                data = json.load(fp)
+
+            self.user_density = data.get("density")
+            self.user_density_timestamp = data.get("timestamp")
+
+            self.logger.info(
+                f"Restored user-submitted density "
+                f"{self.user_density} kg/m3 from disk"
+            )
+
+        except Exception as e:
+            self.logger.warning(
+                f"Failed to restore saved user density: {e}"
+            )
 
     def set_user_density(self, value):
         """Called from the REST endpoint the phone app / web
         dashboard posts a manually-measured density to. No board
-        density sensor exists — this is the only source of density."""
+        density sensor exists — this is the only source of density.
+        Persisted to disk so a process restart mid-demo doesn't lose
+        it and silently freeze the AI verdict."""
 
         with self._lock:
             self.user_density = round(float(value), 2)
             self.user_density_timestamp = self._timestamp()
+
+            with open(self.density_file, "w") as fp:
+                json.dump({
+                    "density": self.user_density,
+                    "timestamp": self.user_density_timestamp,
+                }, fp, indent=4)
 
         self.logger.info(
             f"User-supplied density set to {self.user_density} kg/m3"
@@ -191,14 +251,32 @@ class SensorManager:
                 "timestamp": self.user_density_timestamp,
             }
 
-    def is_plausible(self, reading):
-        for key, (lo, hi) in self.PLAUSIBLE_RANGE.items():
+    def is_core_plausible(self, reading):
+        """Gates whole-reading acceptance on the four board-read
+        sensors only. Density is checked separately (sanitize_density)
+        and never causes the rest of the reading to be dropped."""
+        for key, (lo, hi) in self.CORE_PLAUSIBLE_RANGE.items():
             value = reading.get(key)
             if not isinstance(value, (int, float)):
                 return False
             if not (lo <= value <= hi):
                 return False
         return True
+
+    def sanitize_density(self, value):
+        """A missing, NaN, or out-of-sane-range density becomes None
+        (AI verdict simply waits for a real one) instead of dropping
+        the temp/ethanol/wif/turbidity readings that came in fine."""
+        if value is None:
+            return None
+        if not isinstance(value, (int, float)):
+            return None
+        if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+            return None
+        lo, hi = self.DENSITY_SANITY_RANGE
+        if not (lo <= value <= hi):
+            return None
+        return value
 
     def scale_turbidity(self, raw):
         """Raw 12-bit ADC counts (0-4095) -> plain 0-100 index.
@@ -279,12 +357,22 @@ class SensorManager:
                 "density": self.user_density
             }
 
-            if not self.is_plausible(reading):
+            if not self.is_core_plausible(reading):
                 self.logger.warning(
                     f"Rejected implausible sensor reading "
                     f"(probe in air / disconnected?): {reading}"
                 )
                 return None
+
+            sanitized_density = self.sanitize_density(reading["density"])
+            if reading["density"] is not None and sanitized_density is None:
+                self.logger.warning(
+                    f"Discarding implausible user-entered density "
+                    f"{reading['density']} (outside "
+                    f"{self.DENSITY_SANITY_RANGE} kg/m3 sanity band); "
+                    f"other sensor values still recorded"
+                )
+            reading["density"] = sanitized_density
 
             return reading
 

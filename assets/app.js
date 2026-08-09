@@ -432,6 +432,14 @@ function verdictClass(verdict){
 
 }
 
+function verdictLabel(verdict){
+
+    if (verdict === "AWAITING_DENSITY") return "ENTER DENSITY";
+
+    return verdict;
+
+}
+
 async function loadAiVerdict() {
 
     try {
@@ -469,10 +477,13 @@ async function loadAiVerdict() {
 
         card.className = verdictClass(v.verdict);
 
-        verdictEl.innerHTML = v.verdict;
+        verdictEl.innerHTML = verdictLabel(v.verdict);
 
         confEl.innerHTML =
-        `Confidence : ${(v.confidence * 100).toFixed(1)} %`;
+        v.verdict === "AWAITING_DENSITY"
+        ? "Live sensor data is flowing — enter a density reading " +
+          "below to get an AI verdict."
+        : `Confidence : ${(v.confidence * 100).toFixed(1)} %`;
 
         probsEl.innerHTML =
 
@@ -525,11 +536,15 @@ async function loadAiVerdict() {
 
         signalsEl.innerHTML =
 
-        "<b>Why:</b> " + v.explain.signals.join(" · ") +
-        `<br><b>Density @15°C:</b> ${v.explain.density15} kg/m³ ` +
-        `(physics expects ${v.explain.expected_density15} ` +
-        `for ${v.reading ? v.reading.ethanol : "?"}% ethanol, ` +
-        `residual ${v.explain.rho_residual})`;
+        v.explain.density15 === null || v.explain.density15 === undefined
+
+        ? "<b>Why:</b> " + v.explain.signals.join(" · ")
+
+        : "<b>Why:</b> " + v.explain.signals.join(" · ") +
+          `<br><b>Density @15°C:</b> ${v.explain.density15} kg/m³ ` +
+          `(physics expects ${v.explain.expected_density15} ` +
+          `for ${v.reading ? v.reading.ethanol : "?"}% ethanol, ` +
+          `residual ${v.explain.rho_residual})`;
 
         if (v.anomalies && v.anomalies.length > 0) {
 
@@ -609,16 +624,16 @@ async function loadAiHistory() {
                 <td>${v.timestamp}</td>
 
                 <td class="${verdictClass(v.verdict)}-text">
-                    ${v.verdict}
+                    ${verdictLabel(v.verdict)}
                 </td>
 
                 <td>${(v.confidence * 100).toFixed(1)} %</td>
 
-                <td>${v.explain.density15}</td>
+                <td>${v.explain.density15 ?? "—"}</td>
 
-                <td>${v.explain.expected_density15}</td>
+                <td>${v.explain.expected_density15 ?? "—"}</td>
 
-                <td>${v.explain.rho_residual}</td>
+                <td>${v.explain.rho_residual ?? "—"}</td>
 
                 <td>${anomalies}</td>
 
