@@ -1,3 +1,5 @@
+import json
+
 from arduino.app_utils import *
 from arduino.app_bricks.web_ui import WebUI
 
@@ -86,21 +88,54 @@ def get_user_density():
     return sensorManager.get_user_density()
 
 
-def set_user_density(density: float):
+def set_user_density(*args, density=None, **kwargs):
     """
     Sets the manually-measured density (no board sensor exists —
     this is entered by the user via the phone app / web dashboard
     and applies to every reading, continuous and button-capture,
     until updated again).
 
-    NOTE: this handler's signature (a typed keyword parameter bound
-    from the POST body) follows the same convention this codebase
-    already uses for Bridge.provide() callbacks like
-    record_imu_values() below. It has NOT been verified against the
-    real WebUI framework's POST body-binding behavior — test this
-    one endpoint specifically on the board before relying on it.
+    Deliberately defensive about *how* WebUI hands us the POST body:
+    a typed keyword parameter (density=...) was the original
+    assumption, but that was never confirmed against the real
+    framework and field testing showed density submitted from the
+    dashboard silently not taking effect — the only way to actually
+    change it was hand-editing sensorManager's persisted density
+    file and restarting, which only works because restart forces a
+    reload from that file. That means the request body was never
+    reaching sensorManager.set_user_density() at all. So every
+    plausible calling shape is handled here: a bound `density`
+    kwarg, a dict body passed positionally, a raw JSON string body,
+    or a bare numeric/string positional value.
     """
-    return sensorManager.set_user_density(density)
+    value = density
+
+    if value is None and args:
+        candidate = args[0]
+
+        if isinstance(candidate, dict):
+            value = candidate.get("density")
+
+        elif isinstance(candidate, (bytes, str)):
+            try:
+                parsed = json.loads(candidate)
+                value = (
+                    parsed.get("density")
+                    if isinstance(parsed, dict) else parsed
+                )
+            except (json.JSONDecodeError, TypeError):
+                value = candidate
+
+        else:
+            value = candidate
+
+    if value is None:
+        value = kwargs.get("density")
+
+    if value is None:
+        return {"error": "no 'density' value received in request body"}
+
+    return sensorManager.set_user_density(value)
 
 
 ui.expose_api("GET", "/api/sensors", get_sensor_data)

@@ -427,10 +427,6 @@ tbody tr:hover {
 .verdict-bad-text     { color: #ef4444; font-weight: bold; }
 .verdict-unknown-text { color: #9ca3af; }
 
-#aiTable {
-    display: none;
-}
-
 #aiSignals {
     background: #111827;
     padding: 15px;

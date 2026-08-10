@@ -223,10 +223,31 @@ class SensorManager:
         dashboard posts a manually-measured density to. No board
         density sensor exists — this is the only source of density.
         Persisted to disk so a process restart mid-demo doesn't lose
-        it and silently freeze the AI verdict."""
+        it and silently freeze the AI verdict.
+
+        Rejects obviously-implausible values (unit mixups, typos)
+        right here with a clear error, instead of silently storing
+        them and having readSensors()/sanitize_density() discard them
+        later — that used to make the dashboard show "density in use"
+        for a value that was actually never reaching the AI."""
+
+        try:
+            density = round(float(value), 2)
+        except (TypeError, ValueError):
+            return {"error": f"'{value}' is not a numeric density value"}
+
+        lo, hi = self.DENSITY_SANITY_RANGE
+        if math.isnan(density) or math.isinf(density) or not (lo <= density <= hi):
+            return {
+                "error": (
+                    f"{value} kg/m3 is outside the plausible liquid-fuel "
+                    f"density range ({lo:.0f}-{hi:.0f} kg/m3) — check the "
+                    f"value and try again"
+                )
+            }
 
         with self._lock:
-            self.user_density = round(float(value), 2)
+            self.user_density = density
             self.user_density_timestamp = self._timestamp()
 
             with open(self.density_file, "w") as fp:
