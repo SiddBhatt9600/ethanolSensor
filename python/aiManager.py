@@ -321,6 +321,18 @@ class AiManager:
 
         result = self.model.predict(avg)
 
+        anomalies = []
+        if result["verdict"] != "GOOD":
+            for reason in result["explain"]["signals"]:
+                anomalies.append({
+                    "type": "quality",
+                    "parameter": "quality",
+                    "z_score": None,
+                    "baseline_mean": None,
+                    "value": None,
+                    "reason": reason,
+                })
+
         mileage = self._mileage(avg, result["verdict"])
 
         return {
@@ -331,6 +343,8 @@ class AiManager:
 
             "average": avg,
 
+            "reading": avg,
+
             "verdict": result["verdict"],
 
             "confidence": result["confidence"],
@@ -340,6 +354,8 @@ class AiManager:
             "blend": result["blend"],
 
             "explain": result["explain"],
+
+            "anomalies": anomalies,
 
             "mileage": mileage
 

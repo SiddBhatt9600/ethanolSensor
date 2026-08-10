@@ -6,23 +6,12 @@
 
 let lastHeartbeat = "--";
 
-let eventList = [];
+let lastCaptureTimestamp = null;
 
-function addEvent(message)
-{
-    const now = new Date().toLocaleTimeString();
-
-    eventList.unshift(
-
-        `${now} : ${message}`
-
-    );
-
-    if(eventList.length > 20)
-        eventList.pop();
-
-    document.getElementById("eventLog").innerHTML =
-        eventList.join("<br>");
+function clearCaptureVerdict() {
+    const out = document.getElementById("captureVerdict");
+    out.style.display = "none";
+    out.innerHTML = "";
 }
 
 /*****************************************************************
@@ -130,25 +119,17 @@ async function loadSensorData()
         ).innerHTML =
         display(latest.density);
 
-        if (latest.wif == null)
+        // Water In Fuel card no longer judges its own color from a
+        // fixed wif threshold here — the AI verdict's anomalies list
+        // is the source of truth for "is this water level actually
+        // suspicious", so the card is updated from there instead
+        // (see updateWaterCard() in loadAiVerdict()). This just
+        // keeps a numeric fallback so the card isn't blank before
+        // the first AI verdict arrives.
+        if (document.getElementById("waterValue").innerHTML === "--")
         {
             document.getElementById("waterValue").innerHTML =
-                "--";
-        }
-        else if (latest.wif < 30)
-        {
-            document.getElementById("waterValue").innerHTML =
-                "🟢 Normal";
-        }
-        else if (latest.wif < 70)
-        {
-            document.getElementById("waterValue").innerHTML =
-                "🟡 Warning";
-        }
-        else
-        {
-            document.getElementById("waterValue").innerHTML =
-                "🔴 Critical";
+                display(latest.wif, " %");
         }
 
         document.getElementById("turbidityValue").innerHTML =
@@ -257,8 +238,21 @@ async function loadButtonCapture()
 
             average.style.display = "none";
 
+            lastCaptureTimestamp = null;
+            clearCaptureVerdict();
+
             return;
 
+        }
+
+        // A new capture (different timestamp) replaced the one the
+        // currently-displayed "AI Spot Check" result was analyzed
+        // from — that old verdict no longer describes what's on
+        // screen, so drop it. The user re-clicks "Analyze Latest
+        // Capture" to score the new data.
+        if (capture.timestamp && capture.timestamp !== lastCaptureTimestamp) {
+            lastCaptureTimestamp = capture.timestamp;
+            clearCaptureVerdict();
         }
 
         table.style.display = "table";
@@ -440,6 +434,66 @@ function verdictLabel(verdict){
 
 }
 
+/*****************************************************************
+ *
+ * Water In Fuel card — driven by the AI verdict's anomalies list
+ * rather than its own fixed wif threshold, since the anomalies
+ * panel (fuelQualityModel._signals(), wired through per-blend
+ * water-saturation logic) is the source of truth for whether a
+ * given water reading is actually suspicious for that ethanol
+ * blend. The card just shows the live number, colored by whatever
+ * the anomalies say.
+ *
+ *****************************************************************/
+
+function waterAnomalySeverity(anomalies) {
+
+    if (!anomalies) return "normal";
+
+    let severity = "normal";
+
+    for (const a of anomalies) {
+
+        const reason = (a.type === "quality" ? a.reason : "") || "";
+        const isWifDrift = a.type === "drift" && a.parameter === "wif";
+
+        if (reason.toLowerCase().includes("free water")) {
+            return "critical";
+        }
+
+        if (isWifDrift || reason.toLowerCase().includes("water")) {
+            severity = "warning";
+        }
+
+    }
+
+    return severity;
+
+}
+
+function updateWaterCard(v) {
+
+    const waterEl = document.getElementById("waterValue");
+
+    waterEl.classList.remove(
+        "verdict-good-text", "verdict-suspect-text", "verdict-bad-text"
+    );
+
+    if (!v || !v.reading || typeof v.reading.wif !== "number") {
+        waterEl.innerHTML = "--";
+        return;
+    }
+
+    waterEl.innerHTML = display(v.reading.wif, " %");
+
+    const severity = waterAnomalySeverity(v.anomalies);
+
+    if (severity === "critical")     waterEl.classList.add("verdict-bad-text");
+    else if (severity === "warning") waterEl.classList.add("verdict-suspect-text");
+    else                              waterEl.classList.add("verdict-good-text");
+
+}
+
 async function loadAiVerdict() {
 
     try {
@@ -470,6 +524,8 @@ async function loadAiVerdict() {
             signalsEl.innerHTML = "";
             anomEl.innerHTML = "";
             mileageEl.innerHTML = "Waiting for first verdict…";
+
+            updateWaterCard(null);
 
             return;
 
@@ -573,81 +629,13 @@ async function loadAiVerdict() {
 
         }
 
+        updateWaterCard(v);
+
     }
 
     catch(err){
 
         console.error("AI current API:",err);
-
-    }
-
-}
-
-async function loadAiHistory() {
-
-    try {
-
-        const response = await fetch("/api/ai/verdicts");
-        const data = await response.json();
-
-        const table = document.getElementById("aiTable");
-        const tbody = document.querySelector("#aiTable tbody");
-
-        if (!data || data.length === 0) {
-
-            table.style.display = "none";
-
-            return;
-
-        }
-
-        table.style.display = "table";
-
-        tbody.innerHTML = "";
-
-        data.slice().reverse().forEach(v => {
-
-            const anomalies =
-
-                (v.anomalies && v.anomalies.length > 0)
-
-                ? v.anomalies.map(
-                    a => a.type === "quality" ? "quality" : a.parameter
-                  ).join(", ")
-
-                : "—";
-
-            tbody.innerHTML += `
-
-            <tr>
-
-                <td>${v.timestamp}</td>
-
-                <td class="${verdictClass(v.verdict)}-text">
-                    ${verdictLabel(v.verdict)}
-                </td>
-
-                <td>${(v.confidence * 100).toFixed(1)} %</td>
-
-                <td>${v.explain.density15 ?? "—"}</td>
-
-                <td>${v.explain.expected_density15 ?? "—"}</td>
-
-                <td>${v.explain.rho_residual ?? "—"}</td>
-
-                <td>${anomalies}</td>
-
-            </tr>
-
-            `;
-
-        });
-
-    }
-
-    catch(err){
-
-        console.error("AI history API:",err);
 
     }
 
@@ -713,8 +701,6 @@ async function refreshDashboard()
 
     loadAiVerdict();
 
-    loadAiHistory();
-
 }
 
 refreshDashboard();
@@ -733,7 +719,7 @@ setInterval(
  *
  *****************************************************************/
 
-addEvent("Fuel Quality Dashboard Started");
+console.log("Fuel Quality Dashboard Started");
 
 /*****************************************************************
  *
@@ -1002,7 +988,7 @@ async function loadHeartbeat()
 
         if(hb.missed > 0)
         {
-            addEvent(
+            console.log(
                 "Missed Heartbeats : " + hb.missed
             );
         }
@@ -1077,7 +1063,7 @@ try
 
         });
 
-        addEvent(
+        console.log(
             "Using WebSocket IMU stream."
         );
 
@@ -1108,7 +1094,7 @@ if(window.Chart)
 
     setInterval(loadImu,200);
 
-    addEvent(
+    console.log(
         "IMU Dashboard Ready."
     );
 
@@ -1116,7 +1102,7 @@ if(window.Chart)
 else
 {
 
-    addEvent(
+    console.log(
         "Chart.js not loaded (offline?) — IMU charts disabled."
     );
 
