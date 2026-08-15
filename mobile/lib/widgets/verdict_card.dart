@@ -17,8 +17,8 @@ Color verdictColor(String verdict) {
 }
 
 /// Mirrors loadAiVerdict() in assets/app.js: verdict badge, confidence,
-/// class probabilities, blend check, physics explanation, drift
-/// anomalies and the mileage-impact estimate.
+/// class probabilities, blend check, drift anomalies and the
+/// mileage-impact estimate.
 class VerdictCard extends StatelessWidget {
   final AiVerdict? verdict;
   final String waitingMessage;
@@ -111,10 +111,6 @@ class VerdictCard extends StatelessWidget {
           const SizedBox(height: 12),
           _mileageBox(v.mileage!),
         ],
-        if (v.explain != null) ...[
-          const SizedBox(height: 12),
-          _explainBox(v.explain!, v.reading?.ethanol),
-        ],
         if (v.anomalies.isNotEmpty) ...[
           const SizedBox(height: 12),
           _anomalyBox(v.anomalies),
@@ -157,30 +153,6 @@ class VerdictCard extends StatelessWidget {
               style: const TextStyle(color: AppColors.textMuted, fontSize: 11, fontStyle: FontStyle.italic),
             ),
           ],
-        ],
-      ),
-    );
-  }
-
-  Widget _explainBox(ExplainInfo e, double? ethanol) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.bg,
-        borderRadius: BorderRadius.circular(8),
-        border: const Border(left: BorderSide(color: AppColors.accent, width: 4)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Why: ${e.signals.join(" · ")}', style: const TextStyle(color: AppColors.textPrimary)),
-          const SizedBox(height: 6),
-          Text(
-            'Density @15°C: ${e.density15} kg/m³ (physics expects ${e.expectedDensity15} '
-            'for ${ethanol ?? "?"}% ethanol, residual ${e.rhoResidual})',
-            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
-          ),
         ],
       ),
     );

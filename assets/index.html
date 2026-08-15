@@ -76,6 +76,12 @@
 
     <h2>AI Fuel Quality Verdict</h2>
 
+    <div class="densityStatus">
+        Reflects the last button-press capture (5 fresh readings) —
+        press the button to take a new reading and update everything
+        below.
+    </div>
+
     <div id="aiCard" class="verdict-unknown">
 
         <div id="aiVerdict">WAITING…</div>
@@ -87,8 +93,6 @@
         <div id="aiBlend"></div>
 
     </div>
-
-    <div id="aiSignals"></div>
 
     <div id="aiAnomalies"></div>
 
@@ -104,7 +108,7 @@
 
 
 <!-- ===================================================== -->
-<!-- LIVE STATUS CARDS                                     -->
+<!-- LATEST CAPTURE — STATUS CARDS                          -->
 <!-- ===================================================== -->
 
 <section class="cardContainer">
@@ -181,7 +185,7 @@
 
     <div class="tablePanel">
 
-        <h2>Live Sensor History</h2>
+        <h2>Live Sensor History <small>(raw background feed — diagnostic only, not used for the verdict)</small></h2>
 
         <div id="liveStatus">
             Waiting for first sensor reading...
@@ -225,9 +229,9 @@
 
         <div id="captureStatus">
 
-            Press the button to record the average of the next 5
-            continuous readings (~50 seconds at the current 10s
-            polling interval).
+            Press the button to take 5 fresh readings on the spot.
+            The AI Fuel Quality Verdict above updates automatically
+            as soon as this capture finishes (a couple of seconds).
 
         </div>
 
@@ -262,16 +266,6 @@
         <h3>Average</h3>
 
         <div id="average">
-
-        </div>
-
-        <h3>AI Spot Check</h3>
-
-        <button id="analyzeBtn" onclick="analyzeCapture()">
-            Analyze Latest Capture
-        </button>
-
-        <div id="captureVerdict">
 
         </div>
 

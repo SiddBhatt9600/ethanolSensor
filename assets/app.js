@@ -6,14 +6,6 @@
 
 let lastHeartbeat = "--";
 
-let lastCaptureTimestamp = null;
-
-function clearCaptureVerdict() {
-    const out = document.getElementById("captureVerdict");
-    out.style.display = "none";
-    out.innerHTML = "";
-}
-
 /*****************************************************************
  *
  * Helpers
@@ -46,6 +38,42 @@ function setConnected(state)
         connection.innerHTML = "● Disconnected";
         connection.style.color = "#ef4444";
     }
+}
+
+/*****************************************************************
+ *
+ * Turbidity card — field calibration (2 Aug 2026 observations):
+ * raw sensor index >= 35 clean, 30-35 suspicious, < 30 adulterated.
+ * This is the RAW board index, not the AI model's internal
+ * turbidity feature (sensorManager.calibrate_turbidity() remaps it
+ * onto an inverted 0-100 scale for the model — showing that number
+ * here would look backwards against these field bands, since a
+ * clean sample reads near 0 on the model's scale but 35+ here).
+ *
+ *****************************************************************/
+
+const TURBIDITY_CLEAN = 35;
+const TURBIDITY_SUSPECT = 30;
+
+function updateTurbidityCard(raw) {
+
+    const el = document.getElementById("turbidityValue");
+
+    el.classList.remove(
+        "verdict-good-text", "verdict-suspect-text", "verdict-bad-text"
+    );
+
+    if (typeof raw !== "number") {
+        el.innerHTML = "--";
+        return;
+    }
+
+    el.innerHTML = display(raw);
+
+    if (raw >= TURBIDITY_CLEAN) el.classList.add("verdict-good-text");
+    else if (raw >= TURBIDITY_SUSPECT) el.classList.add("verdict-suspect-text");
+    else el.classList.add("verdict-bad-text");
+
 }
 
 /*****************************************************************
@@ -97,43 +125,12 @@ async function loadSensorData()
             "sensorTable"
         ).style.display = "table";
 
-        const latest =
-            data[data.length - 1];
-
-        /*****************************************************
-         * Dashboard Cards
-         *****************************************************/
-
-        document.getElementById(
-            "ethanolValue"
-        ).innerHTML =
-        display(latest.ethanol, " %");
-
-        document.getElementById(
-            "temperatureValue"
-        ).innerHTML =
-        display(latest.temp, " °C");
-
-        document.getElementById(
-            "densityValue"
-        ).innerHTML =
-        display(latest.density);
-
-        // Water In Fuel card no longer judges its own color from a
-        // fixed wif threshold here — the AI verdict's anomalies list
-        // is the source of truth for "is this water level actually
-        // suspicious", so the card is updated from there instead
-        // (see updateWaterCard() in loadAiVerdict()). This just
-        // keeps a numeric fallback so the card isn't blank before
-        // the first AI verdict arrives.
-        if (document.getElementById("waterValue").innerHTML === "--")
-        {
-            document.getElementById("waterValue").innerHTML =
-                display(latest.wif, " %");
-        }
-
-        document.getElementById("turbidityValue").innerHTML =
-            display(latest.turbidity);
+        // This table is a raw, continuous diagnostic feed only.
+        // The dashboard cards (Ethanol/Temp/Density/Water/Turbidity)
+        // and the AI verdict are populated exclusively from the
+        // latest button-press capture — see updateCardsFromReading()
+        // in loadAiVerdict() — so they intentionally do NOT read
+        // from `data` here anymore.
 
         /*****************************************************
          * Table
@@ -157,7 +154,7 @@ async function loadSensorData()
 
                 <td>${sensor.wif}</td>
 
-                <td>${sensor.turbidity}</td>
+                <td>${sensor.turbidity_raw}</td>
 
             </tr>
 
@@ -232,27 +229,16 @@ async function loadButtonCapture()
                 "captureStatus"
             ).innerHTML =
 
-            "Press the button to record the average of the next five readings.";
+            "Press the button to take 5 fresh readings on the spot. " +
+            "The AI Fuel Quality Verdict above updates automatically " +
+            "as soon as this capture finishes (a couple of seconds).";
 
             table.style.display = "none";
 
             average.style.display = "none";
 
-            lastCaptureTimestamp = null;
-            clearCaptureVerdict();
-
             return;
 
-        }
-
-        // A new capture (different timestamp) replaced the one the
-        // currently-displayed "AI Spot Check" result was analyzed
-        // from — that old verdict no longer describes what's on
-        // screen, so drop it. The user re-clicks "Analyze Latest
-        // Capture" to score the new data.
-        if (capture.timestamp && capture.timestamp !== lastCaptureTimestamp) {
-            lastCaptureTimestamp = capture.timestamp;
-            clearCaptureVerdict();
         }
 
         table.style.display = "table";
@@ -283,7 +269,7 @@ async function loadButtonCapture()
 
                 <td>${sample.wif}</td>
 
-                <td>${sample.turbidity}</td>
+                <td>${sample.turbidity_raw}</td>
 
             </tr>
 
@@ -303,7 +289,7 @@ async function loadButtonCapture()
 
         <b>Water</b> : ${capture.average.wif}<br><br>
 
-        <b>Turbidity</b> : ${capture.average.turbidity}
+        <b>Turbidity</b> : ${capture.average.turbidity_raw}
 
         `;
 
@@ -394,8 +380,8 @@ async function submitDensity() {
         }
 
         result.innerHTML =
-        `Density set to ${d.density} kg/m³. New verdicts will ` +
-        `use it within ~10 seconds.`;
+        `Density set to ${d.density} kg/m³. Press the button to ` +
+        `take a new reading and get a verdict with it.`;
 
         loadDensityStatus();
 
@@ -471,6 +457,35 @@ function waterAnomalySeverity(anomalies) {
 
 }
 
+/*****************************************************************
+ *
+ * Ethanol / Temp / Density cards — like Water and Turbidity above,
+ * these now come exclusively from the latest button-press capture
+ * (v.reading, embedded in the AI verdict response) rather than the
+ * separate continuous sensor feed, so every number on the dashboard
+ * always describes the exact same 5-reading batch.
+ *
+ *****************************************************************/
+
+function updateCardsFromReading(reading) {
+
+    const ethanolEl = document.getElementById("ethanolValue");
+    const tempEl = document.getElementById("temperatureValue");
+    const densityEl = document.getElementById("densityValue");
+
+    if (!reading) {
+        ethanolEl.innerHTML = "-- %";
+        tempEl.innerHTML = "-- °C";
+        densityEl.innerHTML = "--";
+        return;
+    }
+
+    ethanolEl.innerHTML = display(reading.ethanol, " %");
+    tempEl.innerHTML = display(reading.temp, " °C");
+    densityEl.innerHTML = display(reading.density);
+
+}
+
 function updateWaterCard(v) {
 
     const waterEl = document.getElementById("waterValue");
@@ -506,7 +521,6 @@ async function loadAiVerdict() {
         const confEl = document.getElementById("aiConfidence");
         const probsEl = document.getElementById("aiProbs");
         const blendEl = document.getElementById("aiBlend");
-        const signalsEl = document.getElementById("aiSignals");
         const anomEl = document.getElementById("aiAnomalies");
         const mileageEl = document.getElementById("mileageCard");
 
@@ -517,15 +531,16 @@ async function loadAiVerdict() {
             verdictEl.innerHTML = "WAITING…";
 
             confEl.innerHTML =
-            "First verdict arrives within ~10 seconds.";
+            "Press the button to take your first reading.";
 
             probsEl.innerHTML = "";
             blendEl.innerHTML = "";
-            signalsEl.innerHTML = "";
             anomEl.innerHTML = "";
             mileageEl.innerHTML = "Waiting for first verdict…";
 
             updateWaterCard(null);
+            updateTurbidityCard(null);
+            updateCardsFromReading(null);
 
             return;
 
@@ -537,8 +552,8 @@ async function loadAiVerdict() {
 
         confEl.innerHTML =
         v.verdict === "AWAITING_DENSITY"
-        ? "Live sensor data is flowing — enter a density reading " +
-          "below to get an AI verdict."
+        ? "This capture has no density yet — enter a reading below, " +
+          "then press the button again to get an AI verdict."
         : `Confidence : ${(v.confidence * 100).toFixed(1)} %`;
 
         probsEl.innerHTML =
@@ -590,18 +605,6 @@ async function loadAiVerdict() {
 
         }
 
-        signalsEl.innerHTML =
-
-        v.explain.density15 === null || v.explain.density15 === undefined
-
-        ? "<b>Why:</b> " + v.explain.signals.join(" · ")
-
-        : "<b>Why:</b> " + v.explain.signals.join(" · ") +
-          `<br><b>Density @15°C:</b> ${v.explain.density15} kg/m³ ` +
-          `(physics expects ${v.explain.expected_density15} ` +
-          `for ${v.reading ? v.reading.ethanol : "?"}% ethanol, ` +
-          `residual ${v.explain.rho_residual})`;
-
         if (v.anomalies && v.anomalies.length > 0) {
 
             anomEl.style.display = "block";
@@ -630,54 +633,14 @@ async function loadAiVerdict() {
         }
 
         updateWaterCard(v);
+        updateTurbidityCard(v.reading ? v.reading.turbidity_raw : null);
+        updateCardsFromReading(v.reading);
 
     }
 
     catch(err){
 
         console.error("AI current API:",err);
-
-    }
-
-}
-
-async function analyzeCapture() {
-
-    const out = document.getElementById("captureVerdict");
-
-    out.style.display = "block";
-
-    out.innerHTML = "Analyzing…";
-
-    try {
-
-        const response = await fetch("/api/ai/capture_verdict");
-        const v = await response.json();
-
-        if (v.error) {
-
-            out.innerHTML =
-            "No capture available yet — press the button first.";
-
-            return;
-
-        }
-
-        out.className = verdictClass(v.verdict);
-
-        out.innerHTML =
-
-        `<b>${v.verdict}</b> ` +
-        `(confidence ${(v.confidence * 100).toFixed(1)} %)<br>` +
-        v.explain.signals.join(" · ");
-
-    }
-
-    catch(err){
-
-        console.error("Capture verdict API:",err);
-
-        out.innerHTML = "Analysis failed — see console.";
 
     }
 
