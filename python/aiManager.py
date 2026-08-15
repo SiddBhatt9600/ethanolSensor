@@ -11,7 +11,8 @@ from fuelQualityModel import FuelQualityModel
 
 MAX_AI_RECORDS = 1000
 
-AI_INTERVAL = 10          # seconds, matches continuous sensor cadence
+
+CAPTURE_POLL_INTERVAL = 1  # seconds
 ANOMALY_WINDOW = 30       # readings kept for drift detection
 ANOMALY_Z = 3.0           # z-score threshold
 
@@ -58,6 +59,11 @@ class AiManager:
         self.window = deque(maxlen=ANOMALY_WINDOW)
 
         self.next_infer = time.time()
+
+        # Timestamp of the last button capture already scored, so
+        # the worker only reacts to a NEW capture rather than
+        # re-scoring the same one every poll tick.
+        self._last_capture_timestamp = None
 
     ###########################################################
     #
@@ -368,6 +374,13 @@ class AiManager:
     ###########################################################
 
     def _worker(self):
+        """Every value the dashboard shows — cards, verdict, verdict
+        history — comes exclusively from a button-triggered capture
+        now, not a time-based continuous poll. So this loop just
+        watches for a NEW completed capture (by timestamp) and scores
+        its 5-sample average the moment one lands, instead of
+        re-scoring whatever the background sensor loop last saw
+        on a fixed timer regardless of whether it changed."""
 
         while self._running:
 
@@ -375,48 +388,70 @@ class AiManager:
 
             if now >= self.next_infer:
 
-                latest = self.sensor_manager.get_latest_history(1)
+                capture = self.sensor_manager.get_latest_capture()
+                capture_ts = capture.get("timestamp") if capture else None
 
-                if latest:
+                if capture_ts and capture_ts != self._last_capture_timestamp:
 
-                    reading = latest[-1]
+                    avg = capture.get("average", {})
+                    core_fields = ["temp", "ethanol", "wif", "turbidity"]
 
-                    try:
+                    if all(
+                        isinstance(avg.get(k), (int, float))
+                        for k in core_fields
+                    ):
 
-                        if reading.get("density") is None:
-                            verdict = self._awaiting_density_verdict(reading)
-                        else:
-                            verdict = self.infer(reading)
+                        self._last_capture_timestamp = capture_ts
 
-                        with self._lock:
+                        reading = dict(avg)
+                        reading.setdefault("timestamp", capture_ts)
 
-                            self.verdict_cache.append(verdict)
+                        try:
 
-                            self.verdict_cache = \
-                                self.verdict_cache[-MAX_AI_RECORDS:]
+                            if reading.get("density") is None:
+                                verdict = self._awaiting_density_verdict(reading)
+                            else:
+                                verdict = self.infer(reading)
 
-                        self.save_verdict(verdict)
+                            with self._lock:
 
-                        self.logger.info(
+                                self.verdict_cache.append(verdict)
 
-                            f"AI Verdict : {verdict['verdict']} "
-                            f"({verdict['confidence']})"
+                                self.verdict_cache = \
+                                    self.verdict_cache[-MAX_AI_RECORDS:]
 
-                        )
-
-                        if verdict["anomalies"]:
+                            self.save_verdict(verdict)
 
                             self.logger.info(
 
-                                f"AI Anomaly : {verdict['anomalies']}"
+                                f"AI Verdict : {verdict['verdict']} "
+                                f"({verdict['confidence']})"
 
                             )
 
-                    except Exception as e:
+                            if verdict["anomalies"]:
 
-                        self.logger.exception(e)
+                                self.logger.info(
 
-                self.next_infer = now + AI_INTERVAL
+                                    f"AI Anomaly : {verdict['anomalies']}"
+
+                                )
+
+                        except Exception as e:
+
+                            self.logger.exception(e)
+
+                    else:
+
+                        self._last_capture_timestamp = capture_ts
+
+                        self.logger.warning(
+                            "Button capture had no usable sensor "
+                            "readings (probe in air / disconnected?) "
+                            "— skipping AI verdict for this capture."
+                        )
+
+                self.next_infer = now + CAPTURE_POLL_INTERVAL
 
             time.sleep(0.25)
 
@@ -434,6 +469,8 @@ class AiManager:
         self.verdict_cache.clear()
 
         self.window.clear()
+
+        self._last_capture_timestamp = None
 
         with open("ai_history.json", "w") as fp:
             json.dump([], fp, indent=4)

@@ -138,6 +138,9 @@ class SensorManager:
                 "turbidity":
                 self.average("turbidity"),
 
+                "turbidity_raw":
+                self.average("turbidity_raw"),
+
                 "density":
                 self.average("density")
             }
@@ -368,15 +371,17 @@ class SensorManager:
                     )
                 ),
 
-                "turbidity":
-                self.sanitize(
-                    self.calibrate_turbidity(
-                        self.bridge.call("getturbidity")
-                    )
-                ),
-
                 "density": self.user_density
             }
+
+            turbidity_raw = self.sanitize(
+                round(float(self.bridge.call("getturbidity")), 2)
+            )
+
+            reading["turbidity_raw"] = turbidity_raw
+            reading["turbidity"] = self.sanitize(
+                self.calibrate_turbidity(turbidity_raw)
+            )
 
             if not self.is_core_plausible(reading):
                 self.logger.warning(
@@ -400,45 +405,22 @@ class SensorManager:
         except Exception as e:
             self.logger.exception(e)
             return None
-    # Continuous Logger
+    def _record_history(self, reading):
+        with self._lock:
+            self.history_cache.append(reading)
+
+            self.history_cache = self.history_cache[
+                -MAX_SENSOR_RECORDS:
+            ]
+
+            self.save_history()
+
     def log_continuous(self):
         reading = self.readSensors()
         if reading is None:
             return
 
-        ##################################################
-        # Continuous History
-        ##################################################
-
-        self.history_cache.append(reading)
-
-        self.history_cache = self.history_cache[
-            -MAX_SENSOR_RECORDS:
-        ]
-
-        self.save_history()
-
-        ##################################################
-        # Button Capture
-        ##################################################
-
-        with self._lock:
-
-            if self.capture_pending:
-                self.capture_samples.append(reading)
-                self.logger.info(
-                    f"Capture Sample "
-                    f"{len(self.capture_samples)}/"
-                    f"{CAPTURE_SAMPLE_COUNT}"
-                )
-
-                if (len(self.capture_samples) >= CAPTURE_SAMPLE_COUNT):
-                    self.save_capture()
-                    self.capture_pending = False
-                    self.capture_samples = []
-                    self.logger.info(
-                        "Capture Completed."
-                    )
+        self._record_history(reading)
 
         self.logger.info(
             f"Continuous Reading : {reading}"
@@ -455,8 +437,8 @@ class SensorManager:
                 return False
 
             self.logger.info(
-                "Button pressed. Waiting for next "
-                f"{CAPTURE_SAMPLE_COUNT} continuous readings."
+                f"Button pressed. Capturing {CAPTURE_SAMPLE_COUNT} "
+                f"fresh readings now."
             )
 
             self.clear_button_json()
@@ -464,7 +446,48 @@ class SensorManager:
 
             self.capture_pending = True
 
-            return True
+        threading.Thread(
+            target=self._run_capture,
+            daemon=True,
+            name="SensorManager-Capture"
+        ).start()
+
+        return True
+
+    def _run_capture(self):
+        samples = []
+        attempts = 0
+        max_attempts = CAPTURE_SAMPLE_COUNT * 10
+
+        while len(samples) < CAPTURE_SAMPLE_COUNT and attempts < max_attempts:
+            attempts += 1
+
+            reading = self.readSensors()
+
+            if reading is not None:
+                samples.append(reading)
+                self._record_history(reading)
+
+                self.logger.info(
+                    f"Capture Sample {len(samples)}/{CAPTURE_SAMPLE_COUNT}"
+                )
+
+            time.sleep(CAPTURE_INTERVAL)
+
+        with self._lock:
+            self.capture_samples = samples
+            self.capture_pending = False
+
+        if len(samples) < CAPTURE_SAMPLE_COUNT:
+            self.logger.warning(
+                f"Capture finished with only {len(samples)}/"
+                f"{CAPTURE_SAMPLE_COUNT} valid readings after "
+                f"{attempts} attempts (probe in air / disconnected?)."
+            )
+
+        self.save_capture()
+
+        self.logger.info("Capture Completed.")
 
     ###########################################################
     #

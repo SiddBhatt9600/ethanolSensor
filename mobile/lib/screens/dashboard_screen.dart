@@ -14,7 +14,7 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
-    final latest = appState.sensorHistory.isNotEmpty ? appState.sensorHistory.last : null;
+    final latest = appState.currentVerdict?.reading;
 
     return RefreshIndicator(
       onRefresh: appState.refreshNow,

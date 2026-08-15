@@ -28,6 +28,8 @@ from features import extract, expected_density15, FEATURE_NAMES
 # detector — this is an additional, easy-to-explain check).
 STANDARD_DENSITY_BAND = (725.0, 775.0)
 
+HOT_FUEL_TEMP_C = 35.0
+
 # Standard Indian pump blends: nominal ethanol % and accepted band.
 # E20 is the current national rollout blend; verifying the pump
 # actually dispenses in-band E20 is a headline feature.
@@ -117,6 +119,34 @@ class FuelQualityModel:
                 f"pattern matches the {verdict} profile "
                 f"(density residual {rho_residual:+.1f} kg/m3)"
             ]
+
+ 
+        density_val = float(reading["density"])
+        eth_val = float(reading["ethanol"])
+        wif_val = float(reading["wif"])
+        turbidity_val = float(reading["turbidity"])
+
+        density_in_band = (
+            STANDARD_DENSITY_BAND[0] <= density_val <= STANDARD_DENSITY_BAND[1]
+        )
+        other_problem = (
+            wif_val > 8
+            or turbidity_val > 12
+            or not classify_blend(eth_val)["in_spec"]
+        )
+
+        temp_val = float(reading["temp"])
+
+        if (verdict != "GOOD" and density_in_band and not other_problem
+                and temp_val >= HOT_FUEL_TEMP_C):
+            good_idx = next(
+                i for i, name in self.labels.items() if name == "GOOD"
+            )
+            probs = np.zeros_like(probs)
+            probs[good_idx] = 1.0
+            idx = good_idx
+            verdict = "GOOD"
+            signals = ["all parameters within spec"]
 
         explain = {
             "density15": round(float(x[3]), 2),
