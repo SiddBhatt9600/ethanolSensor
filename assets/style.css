@@ -330,7 +330,7 @@ tbody tr:hover {
 
 }
 
-/* The 5-sample readings table is collapsed by default (the average
+/* The 10-sample readings table is collapsed by default (the average
    already shown as one line above it, and again as the cards further
    down the page, covers what most people need). */
 #captureDetails summary {

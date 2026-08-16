@@ -183,20 +183,6 @@ async function loadSensorData()
  *
  *****************************************************************/
 
-// Tracks the most recently DISPLAYED capture's timestamp, and
-// whether we're mid-capture after a trigger, so loadButtonCapture()
-// can tell "brand new data landed" apart from "still the same old
-// capture from before the button was pressed" and never re-show
-// stale numbers as if they were the new reading. The panel itself is
-// always visible now (never hidden). It shows placeholders until the
-// first real reading, then updates in place; a "pending" state just
-// dims the details section briefly instead of hiding anything, so it
-// never looks broken or frozen while a fresh reading comes in. The
-// 5-sample table and the average-of-5 stats used to both show here
-// too, but the average is exactly what the 5 cards further down the
-// page already show, so that duplicate block was dropped and the raw
-// samples now live behind a collapsed "show details" toggle instead
-// of always taking up space.
 let lastSeenCaptureTimestamp = null;
 let capturePending = false;
 let pendingSinceTimestamp = null;
@@ -205,7 +191,7 @@ let lastCaptureLandedAt = null;
 function capturePlaceholderRowsHtml()
 {
     let rows = "";
-    for (let i = 1; i <= 5; i++)
+    for (let i = 1; i <= 10; i++)
     {
         rows += `<tr><td>${i}</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>`;
     }
@@ -654,7 +640,7 @@ function waterAnomalySeverity(anomalies) {
  * these now come exclusively from the latest button-press capture
  * (v.reading, embedded in the AI verdict response) rather than the
  * separate continuous sensor feed, so every number on the dashboard
- * always describes the exact same 5-reading batch.
+ * always describes the exact same 10-reading batch.
  *
  *****************************************************************/
 
