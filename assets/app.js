@@ -16,6 +16,16 @@ function display(value, unit = "")
     return value == null ? "--" : value + unit;
 }
 
+function roundInt(value)
+{
+    return typeof value === "number" ? Math.round(value) : value;
+}
+
+function penaltyText(value)
+{
+    return value > 0 ? `-${value}%` : "0%";
+}
+
 function updateLastUpdate()
 {
     document.getElementById("lastUpdate").innerHTML =
@@ -66,7 +76,10 @@ function updateTurbidityCard(value) {
         return;
     }
 
-    el.innerHTML = display(value, " %");
+    // Rounded for display only — the clean/suspect/adulterated
+    // thresholds below still compare the precise value so a
+    // borderline reading isn't misclassified by the rounding.
+    el.innerHTML = display(roundInt(value), " %");
 
     if (value <= TURBIDITY_CLEAN_MAX) el.classList.add("verdict-good-text");
     else if (value <= TURBIDITY_SUSPECT_MAX) el.classList.add("verdict-suspect-text");
@@ -657,9 +670,9 @@ function updateCardsFromReading(reading) {
         return;
     }
 
-    ethanolEl.innerHTML = display(reading.ethanol, " %");
-    tempEl.innerHTML = display(reading.temp, " °C");
-    densityEl.innerHTML = display(reading.density);
+    ethanolEl.innerHTML = display(roundInt(reading.ethanol), " %");
+    tempEl.innerHTML = display(roundInt(reading.temp), " °C");
+    densityEl.innerHTML = display(roundInt(reading.density));
 
 }
 
@@ -676,7 +689,7 @@ function updateWaterCard(v) {
         return;
     }
 
-    waterEl.innerHTML = display(v.reading.wif, " %");
+    waterEl.innerHTML = display(roundInt(v.reading.wif), " %");
 
     const severity = waterAnomalySeverity(v.anomalies);
 
@@ -768,9 +781,9 @@ async function loadAiVerdict() {
             `(normally ${m.baseline_kmpl} km/l, ` +
             `${m.total_penalty_pct}% lower)<br>` +
 
-            `Ethanol blend: -${m.breakdown.ethanol_blend_pct}% · ` +
-            `Fuel quality: -${m.breakdown.fuel_quality_pct}% · ` +
-            `Driving style: -${m.breakdown.driving_behavior_pct}%<br>` +
+            `Ethanol blend: ${penaltyText(m.breakdown.ethanol_blend_pct)} · ` +
+            `Fuel quality: ${penaltyText(m.breakdown.fuel_quality_pct)} · ` +
+            `Driving style: ${penaltyText(m.breakdown.driving_behavior_pct)}<br>` +
 
             `<span class="mileageNote">${m.notes.join(" ")}</span><br>` +
             `<span class="mileageNote">${m.disclaimer}</span>`;
