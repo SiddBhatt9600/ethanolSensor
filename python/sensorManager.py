@@ -35,23 +35,11 @@ TURBIDITY_ADC_MAX = 4095.0
 TURBIDITY_FIELD_CLEAN = 35.0
 TURBIDITY_FIELD_SUSPECT = 30.0
 
-# User-submitted density is kept in memory (SensorManager.user_density)
-# but also mirrored to this file so a process restart during a demo
-# doesn't silently drop back to "no density entered" and freeze the
-# AI verdict on a stale cached reading.
-USER_DENSITY_FILE = "user_density.json"
-
-
 class SensorManager:
 
-    def __init__(self, bridge, logger, density_file=None):
+    def __init__(self, bridge, logger):
         self.bridge = bridge
         self.logger = logger
-
-        # Overridable so tests can point separate SensorManager
-        # instances at isolated files instead of sharing (and
-        # leaking state through) the real USER_DENSITY_FILE.
-        self.density_file = density_file or USER_DENSITY_FILE
 
         self._running = False
         self._thread = None
@@ -74,11 +62,12 @@ class SensorManager:
         # MCU. Whatever the user last submitted applies to every
         # reading (continuous + button capture) until they update
         # it again, same mental model as "measure once with a
-        # hydrometer, use it for this tank of fuel".
+        # hydrometer, use it for this tank of fuel". Kept in memory
+        # only (not persisted to disk) — a process restart clears it
+        # and the dashboard goes back to "enter density" until it's
+        # resubmitted.
         self.user_density = None
         self.user_density_timestamp = None
-
-        self._load_user_density()
 
     # Utility Functions
     def _timestamp(self):
@@ -200,33 +189,12 @@ class SensorManager:
     # reject the rest of the reading, only the density field itself.
     DENSITY_SANITY_RANGE = (500.0, 1000.0)
 
-    def _load_user_density(self):
-        if not os.path.exists(self.density_file):
-            return
-
-        try:
-            with open(self.density_file, "r") as fp:
-                data = json.load(fp)
-
-            self.user_density = data.get("density")
-            self.user_density_timestamp = data.get("timestamp")
-
-            self.logger.info(
-                f"Restored user-submitted density "
-                f"{self.user_density} kg/m3 from disk"
-            )
-
-        except Exception as e:
-            self.logger.warning(
-                f"Failed to restore saved user density: {e}"
-            )
-
     def set_user_density(self, value):
         """Called from the REST endpoint the phone app / web
         dashboard posts a manually-measured density to. No board
         density sensor exists — this is the only source of density.
-        Persisted to disk so a process restart mid-demo doesn't lose
-        it and silently freeze the AI verdict.
+        Kept in memory only, not persisted to disk, so a process
+        restart clears it (see the note on self.user_density above).
 
         Rejects obviously-implausible values (unit mixups, typos)
         right here with a clear error, instead of silently storing
@@ -244,7 +212,7 @@ class SensorManager:
             return {
                 "error": (
                     f"{value} kg/m3 is outside the plausible liquid-fuel "
-                    f"density range ({lo:.0f}-{hi:.0f} kg/m3) — check the "
+                    f"density range ({lo:.0f}-{hi:.0f} kg/m3). Check the "
                     f"value and try again"
                 )
             }
@@ -252,12 +220,6 @@ class SensorManager:
         with self._lock:
             self.user_density = density
             self.user_density_timestamp = self._timestamp()
-
-            with open(self.density_file, "w") as fp:
-                json.dump({
-                    "density": self.user_density,
-                    "timestamp": self.user_density_timestamp,
-                }, fp, indent=4)
 
         self.logger.info(
             f"User-supplied density set to {self.user_density} kg/m3"
