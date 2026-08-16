@@ -305,7 +305,7 @@ class AiManager:
     def infer_capture(self, capture):
 
         """
-        Scores a button capture (5-sample average) on demand.
+        Scores a button capture (10-sample average) on demand.
         Called via REST when the app requests a spot verdict.
         """
 
@@ -378,7 +378,7 @@ class AiManager:
         history — comes exclusively from a button-triggered capture
         now, not a time-based continuous poll. So this loop just
         watches for a NEW completed capture (by timestamp) and scores
-        its 5-sample average the moment one lands, instead of
+        its 10-sample average the moment one lands, instead of
         re-scoring whatever the background sensor loop last saw
         on a fixed timer regardless of whether it changed."""
 

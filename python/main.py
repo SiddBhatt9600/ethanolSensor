@@ -54,7 +54,7 @@ def get_sensor_data():
 
 def get_button_capture():
     """
-    Returns the latest button capture (5 samples + average).
+    Returns the latest button capture (10 samples + average).
     """
     return sensorManager.get_latest_capture()
 
@@ -83,7 +83,7 @@ def get_capture_verdict():
 
 def trigger_button_capture():
     """
-    Starts a 5-sample button capture on demand from the phone app /
+    Starts a 10-sample button capture on demand from the phone app /
     web dashboard, exactly like the physical button — lets a capture
     be triggered from the UI when the physical button isn't handy
     (e.g. desk testing) without touching the board.
