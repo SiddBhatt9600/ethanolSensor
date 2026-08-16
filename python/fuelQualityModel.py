@@ -29,6 +29,8 @@ from features import extract, expected_density15, FEATURE_NAMES
 # itself falls outside this band.
 STANDARD_DENSITY_BAND = (725.0, 775.0)
 
+ALL_CLEAR_SIGNAL = "Everything looks normal."
+
 # Standard Indian pump blends: nominal ethanol % and accepted band.
 # E20 is the current national rollout blend; verifying the pump
 # actually dispenses in-band E20 is a headline feature.
@@ -112,11 +114,10 @@ class FuelQualityModel:
         # The MLP can flag fuel from the joint sensor pattern before
         # any single-sensor threshold trips; say so instead of
         # showing a contradictory "within spec".
-        if verdict != "GOOD" and signals == ["all parameters within spec"]:
+        if verdict != "GOOD" and signals == [ALL_CLEAR_SIGNAL]:
             signals = [
-                "no single sensor out of range, but the combined "
-                f"pattern matches the {verdict} profile "
-                f"(density residual {rho_residual:+.1f} kg/m3)"
+                "No single reading looks unusual on its own, but "
+                f"the overall pattern still looks {verdict.lower()}."
             ]
 
  
@@ -142,7 +143,7 @@ class FuelQualityModel:
             probs[good_idx] = 1.0
             idx = good_idx
             verdict = "GOOD"
-            signals = ["all parameters within spec"]
+            signals = [ALL_CLEAR_SIGNAL]
 
         explain = {
             "density15": round(float(x[3]), 2),
@@ -167,56 +168,61 @@ class FuelQualityModel:
 
     @staticmethod
     def _signals(reading, rho_residual):
-        """Plain-language reasons, for the app UI and demo video."""
+        """Plain-language reasons, for the app UI and demo video —
+        written for the person looking at the dashboard, not for a
+        developer reading the code."""
 
         s = []
 
         density_val = float(reading["density"])
         if not (STANDARD_DENSITY_BAND[0] <= density_val <= STANDARD_DENSITY_BAND[1]):
             s.append(
-                f"density {density_val:.1f} kg/m3 outside the standard "
-                f"fuel band ({STANDARD_DENSITY_BAND[0]:.0f}-"
-                f"{STANDARD_DENSITY_BAND[1]:.0f} kg/m3) — possible "
-                f"adulteration"
+                f"Density reading ({density_val:.1f} kg/m3) is outside "
+                f"the normal range for petrol "
+                f"({STANDARD_DENSITY_BAND[0]:.0f}-"
+                f"{STANDARD_DENSITY_BAND[1]:.0f} kg/m3). This could mean "
+                f"the fuel has been mixed with something else."
             )
 
         eth_val = float(reading["ethanol"])
         wif_val = float(reading["wif"])
 
         if wif_val > 25:
-            s.append("free water detected in fuel")
+            s.append("Free water was found in the fuel.")
         elif wif_val > 8:
             # E10/E20 blends are hygroscopic: dissolved water climbs
             # toward saturation, then phase-separates. Call out the
             # blend-specific risk instead of a generic warning.
             if 8 <= eth_val <= 25:
-                s.append("ethanol blend absorbing water — "
-                         "phase separation risk (E10/E20 blends "
-                         "are hygroscopic)")
+                s.append("Water is building up in this ethanol blend, "
+                         "raising the phase separation risk common "
+                         "with E10/E20 fuel.")
             else:
-                s.append("elevated water content")
+                s.append("There's more water in the fuel than normal.")
 
         if float(reading["turbidity"]) > 40:
-            s.append("heavy suspended particulates")
+            s.append("The fuel looks very cloudy, with lots of solid particles.")
         elif float(reading["turbidity"]) > 12:
-            s.append("mild haze / particulates")
+            s.append("The fuel looks slightly cloudy.")
 
         # Natural petrol density spans roughly +/-25 kg/m3 around
         # nominal, so only flag residuals clearly outside that band.
         if rho_residual > 28:
-            s.append("density too high for ethanol blend "
-                     "(possible kerosene/solvent or water)")
+            s.append("Fuel density is too high for this ethanol level. "
+                     "Could be kerosene, another solvent, or water "
+                     "mixed in.")
         elif rho_residual < -32:
-            s.append("density too low for ethanol blend")
+            s.append("Fuel density is too low for this ethanol level, "
+                     "which is unusual for a clean blend.")
 
         blend = classify_blend(eth_val)
         if not blend["in_spec"]:
-            s.append(f"measured ethanol {blend['measured']}% is "
-                     f"outside every standard blend band "
-                     f"(nearest {blend['nearest']}) — possible "
-                     f"over/under-blending at the pump")
+            s.append(f"Ethanol level ({blend['measured']}%) doesn't "
+                     f"match any standard blend (closest is "
+                     f"{blend['nearest']}). Possible over/under-"
+                     f"blending at the pump.")
 
         if not s:
-            s.append("all parameters within spec")
+            s.append(ALL_CLEAR_SIGNAL)
 
         return s

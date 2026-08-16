@@ -17,9 +17,7 @@
 
 <header>
 
-    <h1>Fuel Quality Monitoring System</h1>
-
-    <div id="connectionBar">
+    <div class="headerSide">
 
         <span id="connectionStatus">
             ● Connected
@@ -28,6 +26,12 @@
         <span id="heartbeatValue">
             HB : --
         </span>
+
+    </div>
+
+    <h1>Fuel Quality Monitoring System</h1>
+
+    <div class="headerSide headerSideRight">
 
         <span id="lastUpdate">
             Last Update : --
@@ -39,121 +43,186 @@
 
 
 <!-- ===================================================== -->
-<!-- MEASURED DENSITY (USER INPUT)                          -->
+<!-- SETUP (LEFT) + RESULT (RIGHT)                          -->
 <!-- ===================================================== -->
 
-<section class="aiSection">
+<div class="setupAndResultGrid">
 
-    <h2>Measured Fuel Density</h2>
+    <div class="setupColumn">
 
-    <div id="densityStatus" class="densityStatus">
-        No density entered yet — enter a hydrometer/measured
-        reading below. The AI verdict will not appear until this
-        is set (there is no density sensor on the board).
-    </div>
+        <!-- STEP 1 — MEASURED DENSITY (USER INPUT) -->
 
-    <div class="densityInputRow">
+        <section class="aiSection compactSection">
 
-        <input type="number" id="densityInput" step="0.1"
-               placeholder="e.g. 751.2 (kg/m³, standard band 725-775)">
+            <h2>Step 1: Enter Your Fuel's Density</h2>
 
-        <button id="densitySubmitBtn" onclick="submitDensity()">
-            Submit
-        </button>
+            <div class="densityInputRow">
 
-    </div>
+                <input type="number" id="densityInput" step="0.1"
+                       placeholder="e.g. 751.2 (kg/m³, typical range 725-775)">
 
-    <div id="densityResult"></div>
+                <button id="densitySubmitBtn" onclick="submitDensity()">
+                    Submit
+                </button>
 
-</section>
+            </div>
 
+            <div id="densityStatus" class="captureMeta">
+                No density entered yet.
+            </div>
 
-<!-- ===================================================== -->
-<!-- AI FUEL QUALITY VERDICT                               -->
-<!-- ===================================================== -->
+            <div id="densityResult" class="captureMeta"></div>
 
-<section class="aiSection">
+        </section>
 
-    <h2>AI Fuel Quality Verdict</h2>
+        <!-- STEP 2 — BUTTON CAPTURE -->
 
-    <div class="densityStatus">
-        Reflects the last button-press capture (5 fresh readings) —
-        press the button to take a new reading and update everything
-        below.
-    </div>
+        <section class="aiSection compactSection">
 
-    <div id="aiCard" class="verdict-unknown">
+            <h2>Step 2: Take a Reading</h2>
 
-        <div id="aiVerdict">WAITING…</div>
+            <div class="densityInputRow">
 
-        <div id="aiConfidence"></div>
+                <button id="captureNowBtn" onclick="triggerCapture()">
+                    Capture Now
+                </button>
 
-        <div id="aiProbs"></div>
+            </div>
 
-        <div id="aiBlend"></div>
+            <div id="captureStatus" class="captureMeta">
+                No reading yet.
+            </div>
 
-    </div>
+            <div id="captureLastUpdate" class="captureMeta"></div>
 
-    <div id="aiAnomalies"></div>
+            <div id="captureTriggerResult" class="captureMeta"></div>
 
-    <h3>Estimated Fuel Economy Impact</h3>
+            <details id="captureDetails">
 
-    <div id="mileageCard">
+                <summary>Show the 5 individual readings</summary>
 
-        Waiting for first verdict…
+                <table id="captureTable">
 
-    </div>
+                    <thead>
 
-</section>
+                        <tr>
 
+                            <th>#</th>
 
-<!-- ===================================================== -->
-<!-- LATEST CAPTURE — STATUS CARDS                          -->
-<!-- ===================================================== -->
+                            <th>Temp</th>
 
-<section class="cardContainer">
+                            <th>Ethanol</th>
 
-    <div class="card">
+                            <th>Density</th>
 
-        <h3>Ethanol</h3>
+                            <th>Water</th>
 
-        <div class="value" id="ethanolValue">-- %</div>
+                            <th>Turbidity</th>
 
-    </div>
+                        </tr>
 
-    <div class="card">
+                    </thead>
 
-        <h3>Fuel Temp</h3>
+                    <tbody>
 
-        <div class="value" id="temperatureValue">-- °C</div>
+                        <tr><td>1</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+                        <tr><td>2</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+                        <tr><td>3</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+                        <tr><td>4</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+                        <tr><td>5</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
 
-    </div>
+                    </tbody>
 
-    <div class="card">
+                </table>
 
-        <h3>Density</h3>
+            </details>
 
-        <div class="value" id="densityValue">--</div>
-
-    </div>
-
-    <div class="card">
-
-        <h3>Water In Fuel</h3>
-
-        <div class="value" id="waterValue">--</div>
+        </section>
 
     </div>
 
-    <div class="card">
+    <div class="resultColumn">
 
-        <h3>Turbidity</h3>
+        <!-- AI FUEL QUALITY VERDICT -->
 
-        <div class="value" id="turbidityValue">--</div>
+        <section class="aiSection">
+
+            <h2>AI Fuel Quality Verdict</h2>
+
+            <div id="aiCard" class="verdict-unknown">
+
+                <div id="aiVerdict">WAITING…</div>
+
+                <div id="aiConfidence"></div>
+
+                <div id="aiProbs"></div>
+
+                <div id="aiBlend"></div>
+
+            </div>
+
+            <div id="aiAnomalies"></div>
+
+            <!-- The reading behind the verdict above, kept right next
+                 to the reasoning instead of further down the page, so
+                 the "why" is visible without scrolling. -->
+            <div class="cardContainer">
+
+                <div class="card">
+
+                    <h3>Ethanol</h3>
+
+                    <div class="value" id="ethanolValue">-- %</div>
+
+                </div>
+
+                <div class="card">
+
+                    <h3>Fuel Temp</h3>
+
+                    <div class="value" id="temperatureValue">-- °C</div>
+
+                </div>
+
+                <div class="card">
+
+                    <h3>Density</h3>
+
+                    <div class="value" id="densityValue">--</div>
+
+                </div>
+
+                <div class="card">
+
+                    <h3>Water In Fuel</h3>
+
+                    <div class="value" id="waterValue">--</div>
+
+                </div>
+
+                <div class="card">
+
+                    <h3>Turbidity</h3>
+
+                    <div class="value" id="turbidityValue">--</div>
+
+                </div>
+
+            </div>
+
+            <h3>Estimated Fuel Economy Impact</h3>
+
+            <div id="mileageCard">
+
+                Waiting for first verdict…
+
+            </div>
+
+        </section>
 
     </div>
 
-</section>
+</div>
 
 
 <!-- ===================================================== -->
@@ -178,98 +247,44 @@
 
 
 <!-- ===================================================== -->
-<!-- TABLES                                                 -->
+<!-- RAW SENSOR FEED (DIAGNOSTIC ONLY)                      -->
 <!-- ===================================================== -->
 
-<div class="tableWrapper">
+<div class="tablePanel">
 
-    <div class="tablePanel">
+    <h2>Live Sensor History <small>(background readings only, not used for your result)</small></h2>
 
-        <h2>Live Sensor History <small>(raw background feed — diagnostic only, not used for the verdict)</small></h2>
-
-        <div id="liveStatus">
-            Waiting for first sensor reading...
-        </div>
-
-        <table id="sensorTable">
-
-            <thead>
-
-                <tr>
-
-                    <th>Timestamp</th>
-
-                    <th>Temp</th>
-
-                    <th>Ethanol</th>
-
-                    <th>Density</th>
-
-                    <th>Water</th>
-
-                    <th>Turbidity</th>
-
-                </tr>
-
-            </thead>
-
-            <tbody>
-
-            </tbody>
-
-        </table>
-
+    <div id="liveStatus">
+        Waiting for first sensor reading...
     </div>
 
+    <table id="sensorTable">
 
+        <thead>
 
-    <div class="tablePanel">
+            <tr>
 
-        <h2>Button Capture</h2>
+                <th>Timestamp</th>
 
-        <div id="captureStatus">
+                <th>Temp</th>
 
-            Press the button to take 5 fresh readings on the spot.
-            The AI Fuel Quality Verdict above updates automatically
-            as soon as this capture finishes (a couple of seconds).
+                <th>Ethanol</th>
 
-        </div>
+                <th>Density</th>
 
-        <table id="captureTable">
+                <th>Water</th>
 
-            <thead>
+                <th>Turbidity</th>
 
-                <tr>
+            </tr>
 
-                    <th>#</th>
+        </thead>
 
-                    <th>Temp</th>
+        <tbody>
 
-                    <th>Ethanol</th>
+        </tbody>
 
-                    <th>Density</th>
-
-                    <th>Water</th>
-
-                    <th>Turbidity</th>
-
-                </tr>
-
-            </thead>
-
-            <tbody>
-
-            </tbody>
-
-        </table>
-
-        <h3>Average</h3>
-
-        <div id="average">
-
-        </div>
-
-    </div>
+    </table>
 
 </div>
 

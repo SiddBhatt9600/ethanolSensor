@@ -99,6 +99,44 @@ def get_user_density():
     return sensorManager.get_user_density()
 
 
+def _coerce_density_candidate(candidate):
+    """Best-effort extraction of a density number out of one
+    plausible POST-body shape. Returns None if this shape doesn't
+    look like it contains one."""
+
+    if candidate is None:
+        return None
+
+    if isinstance(candidate, (int, float)):
+        return candidate
+
+    if isinstance(candidate, dict):
+        return candidate.get("density")
+
+    if isinstance(candidate, (bytes, str)):
+        try:
+            parsed = json.loads(candidate)
+        except (json.JSONDecodeError, TypeError):
+            return candidate
+        return parsed.get("density") if isinstance(parsed, dict) else parsed
+
+    if isinstance(candidate, (list, tuple)) and candidate:
+        return _coerce_density_candidate(candidate[0])
+
+    # Some web frameworks hand the handler a request-like object
+    # instead of the raw body — try the common attribute names
+    # before giving up on this candidate.
+    for attr in ("json", "body", "data", "text"):
+        if hasattr(candidate, attr):
+            value = getattr(candidate, attr)
+            value = value() if callable(value) else value
+            coerced = _coerce_density_candidate(value)
+            if coerced is not None:
+                return coerced
+
+    return None
+
+
 def set_user_density(*args, density=None, **kwargs):
     """
     Sets the manually-measured density (no board sensor exists —
@@ -109,44 +147,51 @@ def set_user_density(*args, density=None, **kwargs):
     Deliberately defensive about *how* WebUI hands us the POST body:
     a typed keyword parameter (density=...) was the original
     assumption, but that was never confirmed against the real
-    framework and field testing showed density submitted from the
-    dashboard silently not taking effect — the only way to actually
-    change it was hand-editing sensorManager's persisted density
-    file and restarting, which only works because restart forces a
-    reload from that file. That means the request body was never
-    reaching sensorManager.set_user_density() at all. So every
-    plausible calling shape is handled here: a bound `density`
-    kwarg, a dict body passed positionally, a raw JSON string body,
-    or a bare numeric/string positional value.
+    framework, and field testing showed density submitted from the
+    dashboard still silently not taking effect even after the first
+    round of defensive handling below — the only reliable way to
+    change it remained hand-editing sensorManager's persisted density
+    file and restarting. So every call is logged (args/kwargs, with
+    types) before any parsing is attempted, regardless of outcome —
+    if this still doesn't extract a value on the real device, that
+    log line is what tells us the actual shape WebUI is handing us,
+    instead of guessing another shape blind.
     """
-    value = density
+    logger.info(
+        "set_user_density called: "
+        f"args={[(type(a).__name__, repr(a)[:200]) for a in args]} "
+        f"density_kwarg={density!r} "
+        f"kwargs={ {k: (type(v).__name__, repr(v)[:200]) for k, v in kwargs.items()} }"
+    )
 
-    if value is None and args:
-        candidate = args[0]
-
-        if isinstance(candidate, dict):
-            value = candidate.get("density")
-
-        elif isinstance(candidate, (bytes, str)):
-            try:
-                parsed = json.loads(candidate)
-                value = (
-                    parsed.get("density")
-                    if isinstance(parsed, dict) else parsed
-                )
-            except (json.JSONDecodeError, TypeError):
-                value = candidate
-
-        else:
-            value = candidate
+    value = _coerce_density_candidate(density)
 
     if value is None:
-        value = kwargs.get("density")
+        for candidate in args:
+            value = _coerce_density_candidate(candidate)
+            if value is not None:
+                break
 
     if value is None:
-        return {"error": "no 'density' value received in request body"}
+        for key in ("density", "body", "data", "payload", "value"):
+            value = _coerce_density_candidate(kwargs.get(key))
+            if value is not None:
+                break
 
-    return sensorManager.set_user_density(value)
+    if value is None:
+        logger.warning(
+            "set_user_density: no density value could be extracted "
+            "from the request — see the call log line above."
+        )
+        return {
+            "error": "no 'density' value received in request body",
+            "debug_args": [type(a).__name__ for a in args],
+            "debug_kwargs": list(kwargs.keys()),
+        }
+
+    result = sensorManager.set_user_density(value)
+    logger.info(f"set_user_density result: {result}")
+    return result
 
 
 ui.expose_api("GET", "/api/sensors", get_sensor_data)
