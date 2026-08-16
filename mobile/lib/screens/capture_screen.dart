@@ -25,12 +25,30 @@ class CaptureScreen extends StatelessWidget {
         children: [
           SectionCard(
             title: 'Latest Button Capture',
-            child: hasSamples
-                ? _captureTable(capture)
-                : const Text(
-                    'Press the physical button on the device to record the average of the next five readings.',
-                    style: TextStyle(color: AppColors.textMuted),
-                  ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Press the physical button on the device, or tap '
+                  '"Capture Now" below, to record the average of the '
+                  'next five readings.',
+                  style: TextStyle(color: AppColors.textMuted),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: appState.triggeringCapture ? null : () => appState.triggerCapture(),
+                  child: Text(appState.triggeringCapture ? 'Capturing…' : 'Capture Now'),
+                ),
+                if (appState.captureTriggerMessage != null) ...[
+                  const SizedBox(height: 8),
+                  Text(appState.captureTriggerMessage!, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                ],
+                if (hasSamples) ...[
+                  const SizedBox(height: 12),
+                  _captureTable(capture),
+                ],
+              ],
+            ),
           ),
           if (hasSamples) SectionCard(title: 'Average', child: _averageBlock(capture)),
           SectionCard(

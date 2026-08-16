@@ -41,9 +41,9 @@ import sensorManager as sensorManagerModule
 from aiManager import AiManager
 from sensorManager import SensorManager
 
-# Faster cadence for the demo
+
 sensorManagerModule.CONTINUOUS_INTERVAL = 2
-aiManagerModule.AI_INTERVAL = 2
+aiManagerModule.CAPTURE_POLL_INTERVAL = 0.5
 
 SCENARIO_ROTATE_S = 60
 PORT = 8000
@@ -385,6 +385,10 @@ class DemoHandler(BaseHTTPRequestHandler):
                 )
 
             return self._json(sensor_manager.set_user_density(density))
+
+        if path == "/api/button_capture/trigger":
+            started = sensor_manager.trigger_capture()
+            return self._json({"capture_started": started})
 
         self._json({"error": "not found"}, 404)
 
