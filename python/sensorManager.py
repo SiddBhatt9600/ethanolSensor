@@ -11,7 +11,7 @@ MAX_SENSOR_RECORDS = 1000
 
 CONTINUOUS_INTERVAL = 10      # seconds
 CAPTURE_INTERVAL = 0.1        # 100 ms
-CAPTURE_SAMPLE_COUNT = 5
+CAPTURE_SAMPLE_COUNT = 10
 
 # The MCU's readTurbidityRaw() returns raw 12-bit ADC counts
 # (0-4095). scale_turbidity() first converts that to a plain 0-100

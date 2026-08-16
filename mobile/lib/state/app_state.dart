@@ -140,7 +140,7 @@ class AppState extends ChangeNotifier {
     final client = _client;
     if (client == null) return;
     triggeringCapture = true;
-    captureTriggerMessage = 'Capturing 5 fresh readings…';
+    captureTriggerMessage = 'Capturing 10 fresh readings…';
     notifyListeners();
     try {
       final started = await client.triggerCapture();
