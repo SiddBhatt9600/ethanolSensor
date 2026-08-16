@@ -31,7 +31,7 @@ class CaptureScreen extends StatelessWidget {
                 const Text(
                   'Press the physical button on the device, or tap '
                   '"Capture Now" below, to record the average of the '
-                  'next five readings.',
+                  'next 10 readings.',
                   style: TextStyle(color: AppColors.textMuted),
                 ),
                 const SizedBox(height: 12),
