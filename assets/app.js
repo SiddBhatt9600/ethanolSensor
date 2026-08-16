@@ -781,9 +781,10 @@ async function loadAiVerdict() {
             `(normally ${m.baseline_kmpl} km/l, ` +
             `${m.total_penalty_pct}% lower)<br>` +
 
-            `Ethanol blend: ${penaltyText(m.breakdown.ethanol_blend_pct)} · ` +
-            `Fuel quality: ${penaltyText(m.breakdown.fuel_quality_pct)} · ` +
-            `Driving style: ${penaltyText(m.breakdown.driving_behavior_pct)}<br>` +
+
+            `Ethanol blend: ${m.breakdown.ethanol_blend_pct}% (expected) · ` +
+            `Fuel quality: ${m.breakdown.fuel_quality_pct} · ` +
+            `Driving style: ${m.breakdown.driving_behavior_pct}<br>` +
 
             `<span class="mileageNote">${m.notes.join(" ")}</span><br>` +
             `<span class="mileageNote">${m.disclaimer}</span>`;
