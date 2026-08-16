@@ -137,25 +137,12 @@ def _coerce_density_candidate(candidate):
     return None
 
 
-def set_user_density(*args, density=None, **kwargs):
+def set_user_density(density=None, *args, **kwargs):
     """
     Sets the manually-measured density (no board sensor exists —
     this is entered by the user via the phone app / web dashboard
     and applies to every reading, continuous and button-capture,
     until updated again).
-
-    Deliberately defensive about *how* WebUI hands us the POST body:
-    a typed keyword parameter (density=...) was the original
-    assumption, but that was never confirmed against the real
-    framework, and field testing showed density submitted from the
-    dashboard still silently not taking effect even after the first
-    round of defensive handling below — the only reliable way to
-    change it remained hand-editing sensorManager's persisted density
-    file and restarting. So every call is logged (args/kwargs, with
-    types) before any parsing is attempted, regardless of outcome —
-    if this still doesn't extract a value on the real device, that
-    log line is what tells us the actual shape WebUI is handing us,
-    instead of guessing another shape blind.
     """
     logger.info(
         "set_user_density called: "
