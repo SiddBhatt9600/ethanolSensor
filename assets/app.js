@@ -89,7 +89,7 @@ async function loadSensorData()
     {
 
         const response =
-            await fetch("/api/sensors");
+            await fetch("/api/sensors", { cache: "no-store" });
 
         const data =
             await response.json();
@@ -185,6 +185,94 @@ async function loadSensorData()
  *
  *****************************************************************/
 
+// Tracks the most recently DISPLAYED capture's timestamp, and
+// whether we're mid-capture after a trigger, so loadButtonCapture()
+// can tell "brand new data landed" apart from "still the same old
+// capture from before the button was pressed" and never re-show
+// stale numbers as if they were the new reading. The panel itself is
+// always visible now (never hidden). It shows placeholders until the
+// first real reading, then updates in place; a "pending" state just
+// dims the details section briefly instead of hiding anything, so it
+// never looks broken or frozen while a fresh reading comes in. The
+// 5-sample table and the average-of-5 stats used to both show here
+// too, but the average is exactly what the 5 cards further down the
+// page already show, so that duplicate block was dropped and the raw
+// samples now live behind a collapsed "show details" toggle instead
+// of always taking up space.
+let lastSeenCaptureTimestamp = null;
+let capturePending = false;
+let pendingSinceTimestamp = null;
+let lastCaptureLandedAt = null;
+
+function capturePlaceholderRowsHtml()
+{
+    let rows = "";
+    for (let i = 1; i <= 5; i++)
+    {
+        rows += `<tr><td>${i}</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>`;
+    }
+    return rows;
+}
+
+async function triggerCapture()
+{
+
+    const btn = document.getElementById("captureNowBtn");
+    const result = document.getElementById("captureTriggerResult");
+    const details = document.getElementById("captureDetails");
+
+    // Dim the panel immediately (don't wait for the next 1s poll) so
+    // it's obvious a fresh reading is on the way, but keep the last
+    // known numbers on screen instead of hiding/blanking them.
+    capturePending = true;
+    pendingSinceTimestamp = lastSeenCaptureTimestamp;
+    details.classList.add("pending");
+    document.getElementById("captureStatus").innerHTML =
+        "Taking a fresh reading…";
+
+    btn.disabled = true;
+    result.innerHTML = "Taking a fresh reading…";
+
+    try
+    {
+
+        const response =
+            await fetch("/api/button_capture/trigger", { method: "POST", cache: "no-store" });
+
+        const data =
+            await response.json();
+
+        if (data.capture_started === false)
+        {
+            result.innerHTML =
+                "Already taking a reading, one moment.";
+        }
+        else
+        {
+            result.innerHTML =
+                "Reading started. This updates on its own in a " +
+                "couple of seconds.";
+        }
+
+    }
+
+    catch(err)
+    {
+
+        console.error("Capture trigger API:", err);
+        result.innerHTML = "Couldn't start the reading. Please try again.";
+
+        // The trigger itself failed, so nothing is actually in
+        // progress, don't get stuck dimming the panel forever.
+        capturePending = false;
+        loadButtonCapture();
+
+    }
+
+    setTimeout(() => { btn.disabled = false; }, 2000);
+
+}
+
 async function loadButtonCapture()
 {
 
@@ -192,19 +280,14 @@ async function loadButtonCapture()
     {
 
         const response =
-            await fetch("/api/button_capture");
+            await fetch("/api/button_capture", { cache: "no-store" });
 
         const capture =
             await response.json();
 
-        const table =
+        const details =
             document.getElementById(
-                "captureTable"
-            );
-
-        const average =
-            document.getElementById(
-                "average"
+                "captureDetails"
             );
 
         const tbody =
@@ -212,44 +295,89 @@ async function loadButtonCapture()
                 "#captureTable tbody"
             );
 
-        tbody.innerHTML = "";
+        const lastUpdateEl =
+            document.getElementById(
+                "captureLastUpdate"
+            );
 
-        if(
+        const isEmpty =
 
             !capture ||
 
             !capture.samples ||
 
-            capture.samples.length === 0
+            capture.samples.length === 0;
 
-        )
+        // Still the pre-trigger capture (or nothing yet), a new one
+        // is running but hasn't landed. Leave whatever is already on
+        // screen as-is (placeholders or the last real reading) and
+        // just keep it dimmed, instead of clearing it.
+        const stillPending =
+
+            capturePending &&
+
+            (isEmpty || capture.timestamp === pendingSinceTimestamp);
+
+        if (stillPending)
         {
 
             document.getElementById(
                 "captureStatus"
-            ).innerHTML =
-
-            "Press the button to take 5 fresh readings on the spot. " +
-            "The AI Fuel Quality Verdict above updates automatically " +
-            "as soon as this capture finishes (a couple of seconds).";
-
-            table.style.display = "none";
-
-            average.style.display = "none";
+            ).innerHTML = "Taking a fresh reading…";
 
             return;
 
         }
 
-        table.style.display = "table";
+        details.classList.remove("pending");
 
-        average.style.display = "block";
+        if (isEmpty)
+        {
+
+            // Never taken a reading yet, show placeholders instead
+            // of an empty box, same idea as the "--" on the cards
+            // above.
+            capturePending = false;
+
+            tbody.innerHTML = capturePlaceholderRowsHtml();
+
+            document.getElementById(
+                "captureStatus"
+            ).innerHTML =
+
+            "No reading yet. Press \"Capture Now\" below to take one.";
+
+            lastUpdateEl.innerHTML = "";
+
+            return;
+
+        }
+
+        capturePending = false;
+
+        // Only reset the "landed at" clock when this is genuinely a
+        // different capture than the one already on screen, polling
+        // re-runs this branch every second even when nothing changed,
+        // and resetting the clock every time would make "Updated Xs
+        // ago" freeze at "just now" forever instead of counting up.
+        if (capture.timestamp !== lastSeenCaptureTimestamp)
+        {
+            lastCaptureLandedAt = Date.now();
+        }
+
+        lastSeenCaptureTimestamp = capture.timestamp;
 
         document.getElementById(
             "captureStatus"
         ).innerHTML =
 
-        "Latest Button Capture";
+        `Latest: ${capture.average.temp}°C, ` +
+        `${capture.average.ethanol}% ethanol, ` +
+        `${capture.average.density} kg/m³ density, ` +
+        `water ${capture.average.wif}, ` +
+        `turbidity ${capture.average.turbidity_raw}`;
+
+        tbody.innerHTML = "";
 
         capture.samples.forEach((sample,index)=>{
 
@@ -277,21 +405,10 @@ async function loadButtonCapture()
 
         });
 
-        average.innerHTML =
+        const secondsAgo = Math.round((Date.now() - lastCaptureLandedAt) / 1000);
 
-        `
-
-        <b>Temperature</b> : ${capture.average.temp} °C<br><br>
-
-        <b>Ethanol</b> : ${capture.average.ethanol} %<br><br>
-
-        <b>Density</b> : ${capture.average.density}<br><br>
-
-        <b>Water</b> : ${capture.average.wif}<br><br>
-
-        <b>Turbidity</b> : ${capture.average.turbidity_raw}
-
-        `;
+        lastUpdateEl.innerHTML =
+            secondsAgo <= 1 ? "Updated just now" : `Updated ${secondsAgo}s ago`;
 
     }
 
@@ -299,6 +416,10 @@ async function loadButtonCapture()
     {
 
         console.error(err);
+
+        document.getElementById(
+            "captureStatus"
+        ).innerHTML = "Couldn't reach the device. Retrying…";
 
     }
 
@@ -314,7 +435,7 @@ async function loadDensityStatus() {
 
     try {
 
-        const response = await fetch("/api/user/density");
+        const response = await fetch("/api/user/density", { cache: "no-store" });
         const d = await response.json();
 
         const statusEl = document.getElementById("densityStatus");
@@ -322,17 +443,16 @@ async function loadDensityStatus() {
         if (!d || d.density === null || d.density === undefined) {
 
             statusEl.innerHTML =
-            "No density entered yet — enter a hydrometer/measured " +
-            "reading below. The AI verdict will not appear until " +
-            "this is set (there is no density sensor on the board).";
+            "No density entered yet, needed before a result can show.";
 
             return;
 
         }
 
+        const setTime = new Date(d.timestamp).toLocaleTimeString();
+
         statusEl.innerHTML =
-        `Current density in use: <b>${d.density} kg/m³</b> ` +
-        `(set ${d.timestamp})`;
+        `Current: <b>${d.density} kg/m³</b> (set ${setTime})`;
 
     }
 
@@ -366,7 +486,8 @@ async function submitDensity() {
 
             method: "POST",
             headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({density: value})
+            body: JSON.stringify({density: value}),
+            cache: "no-store"
 
         });
 
@@ -379,9 +500,34 @@ async function submitDensity() {
 
         }
 
-        result.innerHTML =
-        `Density set to ${d.density} kg/m³. Press the button to ` +
-        `take a new reading and get a verdict with it.`;
+        // Don't trust the POST response body alone for what actually
+        // took effect — some backends ack a POST without echoing the
+        // real state, which is how a submission that silently failed
+        // to parse ends up showing "Density set to undefined kg/m³"
+        // even though nothing changed. Re-read the device's own
+        // current density (the same GET the dashboard already trusts
+        // after a restart) and confirm it actually matches what was
+        // just typed before calling this a success.
+        const check = await fetch("/api/user/density", { cache: "no-store" });
+        const current = await check.json();
+
+        if (current && typeof current.density === "number"
+                && Math.abs(current.density - value) < 0.01) {
+
+            result.innerHTML = `Density set to ${current.density} kg/m³.`;
+
+        }
+
+        else {
+
+            result.innerHTML =
+            `Submitted ${value} kg/m³, but the device still reports ` +
+            `${current && current.density !== undefined
+                ? current.density : "no density"} kg/m³. The ` +
+            `submission may not have been received. Check the device ` +
+            `log for a "set_user_density called" line.`;
+
+        }
 
         loadDensityStatus();
 
@@ -390,7 +536,7 @@ async function submitDensity() {
     catch(err) {
 
         console.error("Density submit API:", err);
-        result.innerHTML = "Submit failed — see console.";
+        result.innerHTML = "Submit failed. See console.";
 
     }
 
@@ -417,6 +563,43 @@ function verdictLabel(verdict){
     if (verdict === "AWAITING_DENSITY") return "ENTER DENSITY";
 
     return verdict;
+
+}
+
+const PARAM_NAMES = {
+    temp: "Fuel temperature",
+    ethanol: "Ethanol level",
+    wif: "Water level",
+    turbidity: "Cloudiness",
+    density: "Density",
+};
+
+function friendlyParamName(parameter) {
+    return PARAM_NAMES[parameter] || parameter;
+}
+
+// Turns the raw GOOD/SUSPECT/ADULTERATED percentage breakdown into a
+// plain sentence. When the call was clear-cut (top result well ahead
+// of the rest) the confidence number above already says enough, so
+// this stays empty rather than repeating it. It only speaks up when
+// there was a real second-place contender, which is the case worth
+// knowing about.
+function describeProbs(probs, verdict) {
+
+    if (!probs) return "";
+
+    const entries = Object.entries(probs)
+        .sort((a, b) => b[1] - a[1]);
+
+    const [, topShare] = entries[0];
+    const [runnerUp, runnerUpShare] = entries[1];
+
+    if (runnerUpShare < 0.2 || topShare - runnerUpShare > 0.4) {
+        return "";
+    }
+
+    return `It was a close call. Some signs also pointed toward ` +
+           `${runnerUp} (${(runnerUpShare * 100).toFixed(0)}%).`;
 
 }
 
@@ -513,7 +696,7 @@ async function loadAiVerdict() {
 
     try {
 
-        const response = await fetch("/api/ai/current");
+        const response = await fetch("/api/ai/current", { cache: "no-store" });
         const v = await response.json();
 
         const card = document.getElementById("aiCard");
@@ -552,25 +735,26 @@ async function loadAiVerdict() {
 
         confEl.innerHTML =
         v.verdict === "AWAITING_DENSITY"
-        ? "This capture has no density yet — enter a reading below, " +
-          "then press the button again to get an AI verdict."
-        : `Confidence : ${(v.confidence * 100).toFixed(1)} %`;
+        ? "We don't have a density reading for this yet. Enter one " +
+          "above, then take a new reading to see your fuel quality " +
+          "result."
+        : `${(v.confidence * 100).toFixed(0)}% confident`;
 
-        probsEl.innerHTML =
-
-        `GOOD ${(v.probs.GOOD * 100).toFixed(1)} % · ` +
-        `SUSPECT ${(v.probs.SUSPECT * 100).toFixed(1)} % · ` +
-        `ADULTERATED ${(v.probs.ADULTERATED * 100).toFixed(1)} %`;
+        // A plain sentence instead of a raw per-class percentage
+        // breakdown — only worth showing when it wasn't a clear-cut
+        // call, so a close second place is visible instead of buried
+        // in three side-by-side numbers.
+        probsEl.innerHTML = describeProbs(v.probs, v.verdict);
 
         if (v.blend) {
 
             blendEl.innerHTML = v.blend.in_spec
 
-            ? `Blend check : ${v.blend.nearest} — measured ` +
-              `${v.blend.measured} % ethanol (within band) ✓`
+            ? `Fuel type: ${v.blend.nearest} (${v.blend.measured}% ` +
+              `ethanol, right where it should be) ✓`
 
-            : `⚠ Blend check : measured ${v.blend.measured} % ` +
-              `ethanol — OFF-SPEC (nearest ${v.blend.nearest})`;
+            : `⚠ Ethanol reading (${v.blend.measured}%) doesn't match ` +
+              `any standard fuel type (closest is ${v.blend.nearest})`;
 
         }
 
@@ -587,8 +771,8 @@ async function loadAiVerdict() {
             mileageEl.innerHTML =
 
             `<b>${m.estimated_kmpl} km/l</b> estimated ` +
-            `(baseline ${m.baseline_kmpl} km/l, ` +
-            `${m.total_penalty_pct}% impact)<br>` +
+            `(normally ${m.baseline_kmpl} km/l, ` +
+            `${m.total_penalty_pct}% lower)<br>` +
 
             `Ethanol blend: -${m.breakdown.ethanol_blend_pct}% · ` +
             `Fuel quality: -${m.breakdown.fuel_quality_pct}% · ` +
@@ -611,14 +795,14 @@ async function loadAiVerdict() {
 
             anomEl.innerHTML =
 
-            "<b>⚠ Anomalies / quality flags:</b><br>" +
+            "<b>⚠ What we noticed:</b><br>" +
 
             v.anomalies.map(a =>
 
                 a.type === "quality"
                 ? a.reason
-                : `drift — ${a.parameter}: ${a.value} vs baseline ` +
-                  `${a.baseline_mean} (z = ${a.z_score})`
+                : `${friendlyParamName(a.parameter)} just changed a lot. ` +
+                  `It's now ${a.value}, usually around ${a.baseline_mean}.`
 
             ).join("<br>");
 
@@ -675,6 +859,19 @@ setInterval(
     1000
 
 );
+
+// Browsers throttle setInterval timers hard while a tab is in the
+// background (sometimes down to once a minute or less), which made
+// the dashboard look frozen after switching away and back — force an
+// immediate refresh the moment this tab becomes visible again instead
+// of waiting for the next throttled tick.
+document.addEventListener("visibilitychange", () => {
+
+    if (document.visibilityState === "visible") {
+        refreshDashboard();
+    }
+
+});
 
 /*****************************************************************
  *
@@ -939,7 +1136,7 @@ async function loadHeartbeat()
     try
     {
         const response =
-            await fetch("/api/heartbeat");
+            await fetch("/api/heartbeat", { cache: "no-store" });
 
         const hb =
             await response.json();
@@ -975,7 +1172,7 @@ async function loadImu()
     {
 
         const response =
-            await fetch("/api/imu_capture");
+            await fetch("/api/imu_capture", { cache: "no-store" });
 
         const data =
             await response.json();
