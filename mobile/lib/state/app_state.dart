@@ -39,6 +39,9 @@ class AppState extends ChangeNotifier {
   String? captureVerdictError;
   bool analyzingCapture = false;
 
+  bool triggeringCapture = false;
+  String? captureTriggerMessage;
+
   DensityStatus? densityStatus;
   bool submittingDensity = false;
   String? densitySubmitError;
@@ -131,6 +134,24 @@ class AppState extends ChangeNotifier {
       // IMU is a secondary stream; the dashboard's main poll already
       // reports connectivity loss, so stay quiet here to avoid churn.
     }
+  }
+
+  Future<void> triggerCapture() async {
+    final client = _client;
+    if (client == null) return;
+    triggeringCapture = true;
+    captureTriggerMessage = 'Capturing 5 fresh readings…';
+    notifyListeners();
+    try {
+      final started = await client.triggerCapture();
+      captureTriggerMessage = started
+          ? 'Capture started — the dashboard updates automatically in a couple of seconds.'
+          : 'A capture is already in progress — hang tight.';
+    } catch (e) {
+      captureTriggerMessage = 'Failed to start capture: $e';
+    }
+    triggeringCapture = false;
+    notifyListeners();
   }
 
   Future<void> analyzeCapture() async {

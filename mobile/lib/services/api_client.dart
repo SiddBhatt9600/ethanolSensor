@@ -93,6 +93,14 @@ class ApiClient {
     return ButtonCapture.fromJson(data);
   }
 
+  /// Starts a 5-sample capture on demand, same as pressing the
+  /// physical button. Returns false if a capture is already running.
+  Future<bool> triggerCapture() async {
+    final data = await _postJson('/api/button_capture/trigger', {})
+        as Map<String, dynamic>;
+    return data['capture_started'] == true;
+  }
+
   Future<AiVerdict> getAiCurrent() async {
     final data = await _getJson('/api/ai/current') as Map<String, dynamic>;
     return AiVerdict.fromJson(data);

@@ -21,14 +21,13 @@ from features import extract, expected_density15, FEATURE_NAMES
 # There is no density sensor on the board — density is measured by
 # the user (e.g. with a hydrometer) and entered via the phone app or
 # web dashboard (SensorManager.set_user_density()). Standard petrol
-# density at 15C sits in the 725-775 kg/m3 band (BIS IS 2796); this
-# is a simple, direct sanity check on the user-entered value,
-# independent of the more nuanced ethanol-vs-density residual
-# physics below (which still runs and remains the sharper kerosene
-# detector — this is an additional, easy-to-explain check).
+# density at 15C sits in the 725-775 kg/m3 band (BIS IS 2796). An
+# as-entered value inside this band, with nothing else wrong, wins
+# over the finer ethanol-vs-density residual physics below — see the
+# tradeoff note in predict(). The residual still runs and is still
+# the sharper kerosene/solvent detector whenever the raw density
+# itself falls outside this band.
 STANDARD_DENSITY_BAND = (725.0, 775.0)
-
-HOT_FUEL_TEMP_C = 35.0
 
 # Standard Indian pump blends: nominal ethanol % and accepted band.
 # E20 is the current national rollout blend; verifying the pump
@@ -135,10 +134,7 @@ class FuelQualityModel:
             or not classify_blend(eth_val)["in_spec"]
         )
 
-        temp_val = float(reading["temp"])
-
-        if (verdict != "GOOD" and density_in_band and not other_problem
-                and temp_val >= HOT_FUEL_TEMP_C):
+        if verdict != "GOOD" and density_in_band and not other_problem:
             good_idx = next(
                 i for i, name in self.labels.items() if name == "GOOD"
             )

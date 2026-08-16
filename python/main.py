@@ -81,6 +81,17 @@ def get_capture_verdict():
     )
 
 
+def trigger_button_capture():
+    """
+    Starts a 5-sample button capture on demand from the phone app /
+    web dashboard, exactly like the physical button — lets a capture
+    be triggered from the UI when the physical button isn't handy
+    (e.g. desk testing) without touching the board.
+    """
+    logger.info("Capture requested from UI. Starting capture.")
+    return {"capture_started": sensorManager.trigger_capture()}
+
+
 def get_user_density():
     """
     Returns the last user-submitted density + when it was set.
@@ -145,6 +156,7 @@ ui.expose_api("GET", "/api/ai/current", get_current_verdict)
 ui.expose_api("GET", "/api/ai/capture_verdict", get_capture_verdict)
 ui.expose_api("GET", "/api/user/density", get_user_density)
 ui.expose_api("POST", "/api/user/density", set_user_density)
+ui.expose_api("POST", "/api/button_capture/trigger", trigger_button_capture)
 
 ###############################################################
 # Bridge callback
