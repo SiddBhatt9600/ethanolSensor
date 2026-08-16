@@ -42,20 +42,18 @@ function setConnected(state)
 
 /*****************************************************************
  *
- * Turbidity card — field calibration (2 Aug 2026 observations):
- * raw sensor index >= 35 clean, 30-35 suspicious, < 30 adulterated.
- * This is the RAW board index, not the AI model's internal
- * turbidity feature (sensorManager.calibrate_turbidity() remaps it
- * onto an inverted 0-100 scale for the model — showing that number
- * here would look backwards against these field bands, since a
- * clean sample reads near 0 on the model's scale but 35+ here).
+ * Turbidity card — shows the AI model's own calibrated turbidity
+ * feature (sensorManager.calibrate_turbidity()), not the raw board
+ * index. On this scale LOW = clean, HIGH = dirty, matching the
+ * bands the model was trained on: clean ~0-6, suspect ~12-30,
+ * adulterated ~40-100 (see calibrate_turbidity()'s docstring).
  *
  *****************************************************************/
 
-const TURBIDITY_CLEAN = 35;
-const TURBIDITY_SUSPECT = 30;
+const TURBIDITY_CLEAN_MAX = 12;
+const TURBIDITY_SUSPECT_MAX = 40;
 
-function updateTurbidityCard(raw) {
+function updateTurbidityCard(value) {
 
     const el = document.getElementById("turbidityValue");
 
@@ -63,15 +61,15 @@ function updateTurbidityCard(raw) {
         "verdict-good-text", "verdict-suspect-text", "verdict-bad-text"
     );
 
-    if (typeof raw !== "number") {
+    if (typeof value !== "number") {
         el.innerHTML = "--";
         return;
     }
 
-    el.innerHTML = display(raw);
+    el.innerHTML = display(value);
 
-    if (raw >= TURBIDITY_CLEAN) el.classList.add("verdict-good-text");
-    else if (raw >= TURBIDITY_SUSPECT) el.classList.add("verdict-suspect-text");
+    if (value <= TURBIDITY_CLEAN_MAX) el.classList.add("verdict-good-text");
+    else if (value <= TURBIDITY_SUSPECT_MAX) el.classList.add("verdict-suspect-text");
     else el.classList.add("verdict-bad-text");
 
 }
@@ -817,7 +815,7 @@ async function loadAiVerdict() {
         }
 
         updateWaterCard(v);
-        updateTurbidityCard(v.reading ? v.reading.turbidity_raw : null);
+        updateTurbidityCard(v.reading ? v.reading.turbidity : null);
         updateCardsFromReading(v.reading);
 
     }
