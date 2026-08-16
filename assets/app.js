@@ -480,7 +480,8 @@ async function submitDensity() {
 
     try {
 
-        const response = await fetch("/api/user/density", {
+        const response = await fetch(
+            `/api/user/density?density=${encodeURIComponent(value)}`, {
 
             method: "POST",
             headers: {"Content-Type": "application/json"},
@@ -494,6 +495,15 @@ async function submitDensity() {
         if (d.error) {
 
             result.innerHTML = `Failed: ${d.error}`;
+            return;
+
+        }
+
+        if (d.detail) {
+            const firstIssue = Array.isArray(d.detail) ? d.detail[0] : d.detail;
+            result.innerHTML =
+                `Failed: the device rejected the request ` +
+                `(${firstIssue && firstIssue.msg ? firstIssue.msg : JSON.stringify(d.detail)}).`;
             return;
 
         }

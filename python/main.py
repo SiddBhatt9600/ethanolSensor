@@ -137,44 +137,45 @@ def _coerce_density_candidate(candidate):
     return None
 
 
-def set_user_density(density=None, *args, **kwargs):
+def set_user_density(density=None):
     """
     Sets the manually-measured density (no board sensor exists —
     this is entered by the user via the phone app / web dashboard
     and applies to every reading, continuous and button-capture,
     until updated again).
+
+    Field testing showed the real WebUI framework returning HTTP 422
+    on this endpoint with the response body:
+        {"detail": [
+            {"loc": ["query", "args"], "msg": "Field required", ...},
+            {"loc": ["query", "kwargs"], "msg": "Field required", ...}
+        ]}
+    That confirms the framework does naive signature introspection to
+    validate requests (FastAPI-style) and does NOT understand Python's
+    *args/**kwargs as variadic collectors — it was reading them as two
+    literal required parameters named "args" and "kwargs" and
+    rejecting every request before this function ever ran, regardless
+    of what the client actually sent. Fixed by dropping *args/**kwargs
+    entirely and using a single plain parameter, the shape this kind
+    of framework expects to bind a request field to.
+
+    The error also shows the framework's default binding location is
+    "query" for a plain untyped parameter, not the JSON body — so the
+    frontend (assets/app.js submitDensity()) now sends the value both
+    ways (query string AND JSON body) since it's not confirmed which
+    one this framework actually reads it from, and sending both is
+    harmless either way.
     """
-    logger.info(
-        "set_user_density called: "
-        f"args={[(type(a).__name__, repr(a)[:200]) for a in args]} "
-        f"density_kwarg={density!r} "
-        f"kwargs={ {k: (type(v).__name__, repr(v)[:200]) for k, v in kwargs.items()} }"
-    )
+    logger.info(f"set_user_density called: density={density!r}")
 
     value = _coerce_density_candidate(density)
 
     if value is None:
-        for candidate in args:
-            value = _coerce_density_candidate(candidate)
-            if value is not None:
-                break
-
-    if value is None:
-        for key in ("density", "body", "data", "payload", "value"):
-            value = _coerce_density_candidate(kwargs.get(key))
-            if value is not None:
-                break
-
-    if value is None:
         logger.warning(
             "set_user_density: no density value could be extracted "
-            "from the request — see the call log line above."
+            f"from density={density!r}"
         )
-        return {
-            "error": "no 'density' value received in request body",
-            "debug_args": [type(a).__name__ for a in args],
-            "debug_kwargs": list(kwargs.keys()),
-        }
+        return {"error": "no 'density' value received in request"}
 
     result = sensorManager.set_user_density(value)
     logger.info(f"set_user_density result: {result}")
