@@ -21,12 +21,12 @@ from features import extract, expected_density15, FEATURE_NAMES
 # There is no density sensor on the board — density is measured by
 # the user (e.g. with a hydrometer) and entered via the phone app or
 # web dashboard (SensorManager.set_user_density()). Standard petrol
-# density at 15C sits in the 725-775 kg/m3 band (BIS IS 2796). An
-# as-entered value inside this band, with nothing else wrong, wins
-# over the finer ethanol-vs-density residual physics below — see the
-# tradeoff note in predict(). The residual still runs and is still
-# the sharper kerosene/solvent detector whenever the raw density
-# itself falls outside this band.
+# density at 15C sits in the 725-775 kg/m3 band (BIS IS 2796).
+# predict() gates on this band directly, before the model runs at
+# all: outside it, the reading is called ADULTERATED immediately (see
+# _reject_density_out_of_range()); inside it, with nothing else
+# wrong, an in-band value also wins over the finer ethanol-vs-density
+# residual physics (see the tradeoff note in predict()).
 STANDARD_DENSITY_BAND = (725.0, 775.0)
 
 ALL_CLEAR_SIGNAL = "Everything looks normal."
@@ -99,15 +99,27 @@ class FuelQualityModel:
         """
         reading: dict with temp, ethanol, wif, turbidity, density
         Returns verdict + confidence + a human-readable explanation
-        of which physical signals drove it.
+        of which physical signals drove it. Density is gated first:
+        outside 725-775 kg/m3, this returns ADULTERATED immediately
+        without running the model (see _reject_density_out_of_range).
         """
 
         x = extract(reading)
+        rho_residual = float(x[FEATURE_NAMES.index("rho_residual")])
+
+        density_val = float(reading["density"])
+        density_in_band = (
+            STANDARD_DENSITY_BAND[0] <= density_val <= STANDARD_DENSITY_BAND[1]
+        )
+
+        if not density_in_band:
+            return self._reject_density_out_of_range(
+                reading, density_val, x, rho_residual
+            )
+
         probs = self._forward(x)
         idx = int(np.argmax(probs))
         verdict = self.labels[idx]
-
-        rho_residual = float(x[FEATURE_NAMES.index("rho_residual")])
 
         signals = self._signals(reading, rho_residual)
 
@@ -120,22 +132,20 @@ class FuelQualityModel:
                 f"the overall pattern still looks {verdict.lower()}."
             ]
 
- 
-        density_val = float(reading["density"])
         eth_val = float(reading["ethanol"])
         wif_val = float(reading["wif"])
         turbidity_val = float(reading["turbidity"])
 
-        density_in_band = (
-            STANDARD_DENSITY_BAND[0] <= density_val <= STANDARD_DENSITY_BAND[1]
-        )
+        # Density is already known to be in-band here (the gate above
+        # returned early otherwise) — this override only needs to
+        # check the other three signals now.
         other_problem = (
             wif_val > 8
             or turbidity_val > 12
             or not classify_blend(eth_val)["in_spec"]
         )
 
-        if verdict != "GOOD" and density_in_band and not other_problem:
+        if verdict != "GOOD" and not other_problem:
             good_idx = next(
                 i for i, name in self.labels.items() if name == "GOOD"
             )
@@ -166,23 +176,59 @@ class FuelQualityModel:
 
     # -------------------------------------------------------------
 
+    def _reject_density_out_of_range(self, reading, density_val, x, rho_residual):
+        """Short-circuit path for predict() — a density outside the
+        standard band skips the model entirely and calls ADULTERATED
+        directly. Still fills in the same response shape (density15,
+        residual, blend) as the normal path so callers don't need to
+        special-case this."""
+
+        adulterated_idx = next(
+            i for i, name in self.labels.items() if name == "ADULTERATED"
+        )
+        probs = np.zeros(len(self.labels))
+        probs[adulterated_idx] = 1.0
+
+        signal = (
+            f"Density reading ({density_val:.1f} kg/m3) is outside "
+            f"the normal range for petrol "
+            f"({STANDARD_DENSITY_BAND[0]:.0f}-"
+            f"{STANDARD_DENSITY_BAND[1]:.0f} kg/m3), so this is called "
+            f"adulterated without running any further checks."
+        )
+
+        return {
+            "verdict": "ADULTERATED",
+            "confidence": 1.0,
+            "probs": {
+                self.labels[i]: round(float(p), 3)
+                for i, p in enumerate(probs)
+            },
+            "blend": classify_blend(reading["ethanol"]),
+            "explain": {
+                "density15": round(float(x[3]), 2),
+                "expected_density15":
+                    round(expected_density15(float(reading["ethanol"])), 2),
+                "rho_residual": round(rho_residual, 2),
+                "signals": [signal],
+            },
+        }
+
+    # -------------------------------------------------------------
+
     @staticmethod
     def _signals(reading, rho_residual):
         """Plain-language reasons, for the app UI and demo video —
         written for the person looking at the dashboard, not for a
-        developer reading the code."""
+        developer reading the code.
+
+        Only ever called on a reading whose density is already
+        confirmed in-band (predict() short-circuits out-of-band
+        density before reaching here — see
+        _reject_density_out_of_range()), so there's no density-band
+        check in here anymore; it could never fire."""
 
         s = []
-
-        density_val = float(reading["density"])
-        if not (STANDARD_DENSITY_BAND[0] <= density_val <= STANDARD_DENSITY_BAND[1]):
-            s.append(
-                f"Density reading ({density_val:.1f} kg/m3) is outside "
-                f"the normal range for petrol "
-                f"({STANDARD_DENSITY_BAND[0]:.0f}-"
-                f"{STANDARD_DENSITY_BAND[1]:.0f} kg/m3). This could mean "
-                f"the fuel has been mixed with something else."
-            )
 
         eth_val = float(reading["ethanol"])
         wif_val = float(reading["wif"])

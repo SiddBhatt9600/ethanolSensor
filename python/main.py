@@ -37,7 +37,7 @@ aiManager.start()
 # WebUI and Instantiate imuManager with it
 ###############################################################
 
-ui = WebUI()
+# ui = WebUI()
 
 imuManager = ImuManager(logger, ui)
 imuManager.start()
