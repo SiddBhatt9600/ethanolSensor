@@ -66,7 +66,7 @@ function updateTurbidityCard(value) {
         return;
     }
 
-    el.innerHTML = display(value);
+    el.innerHTML = display(value, " %");
 
     if (value <= TURBIDITY_CLEAN_MAX) el.classList.add("verdict-good-text");
     else if (value <= TURBIDITY_SUSPECT_MAX) el.classList.add("verdict-suspect-text");
