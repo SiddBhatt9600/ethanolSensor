@@ -46,7 +46,8 @@ sensorManagerModule.CONTINUOUS_INTERVAL = 2
 aiManagerModule.CAPTURE_POLL_INTERVAL = 0.5
 
 SCENARIO_ROTATE_S = 60
-PORT = 8000
+
+PORT = int(os.environ.get("PORT", "8000"))
 
 ASSETS_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "assets"
@@ -56,6 +57,15 @@ ASSETS_DIR = os.path.join(
 # ------------------------------------------------------------------
 # Mock Bridge — mirrors sketch/sketch.ino's scenario engine
 # ------------------------------------------------------------------
+def _board_reading_from_feature(feature):
+    f = max(0.0, min(100.0, float(feature)))
+
+    clean = sensorManagerModule.TURBIDITY_BOARD_CLEAN
+    dirty = sensorManagerModule.TURBIDITY_BOARD_DIRTY
+
+    return round(clean - (clean - dirty) * f / 100.0, 2)
+
+
 class MockBridge:
 
     SCENARIOS = ("good", "suspect", "adulterated")
@@ -146,16 +156,8 @@ class MockBridge:
                 self._hb += 1
                 return self._hb
             if name == "getturbidity":
-                # The real MCU's getturbidity() already returns a
-                # plain 0-100 index (readTurbidityPercent() does the
-                # ADC->percent scaling on-device — see sketch.ino).
-                # self._reading["turbidity"] follows the simulator's
-                # low=clean convention; invert it to the real
-                # sensor's field-calibrated high=clean convention
-                # (sensorManager.TURBIDITY_FIELD_CLEAN) so
-                # calibrate_turbidity() on the receiving end round-
-                # trips correctly back to a low (clean) model feature.
-                return round(100.0 - self._reading["turbidity"], 2)
+                return _board_reading_from_feature(
+                    self._reading["turbidity"])
             key = {
                 "readDS18B20TempC": "temp",
                 "getethanolPercentage": "ethanol",
@@ -263,13 +265,6 @@ class DemoHandler(BaseHTTPRequestHandler):
         pass                                   # keep console readable
 
     def _cors_headers(self):
-        # The Flutter web app (Chrome, served from its own dev-server
-        # origin) and the dashboard opened from a different port both
-        # call this server via browser fetch(), which enforces CORS.
-        # Without these headers every request fails client-side with
-        # a generic "Failed to fetch" — curl/native apps are unaffected
-        # since CORS is a browser-only restriction, which is why this
-        # can look fine from the command line and still break the UI.
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
@@ -394,7 +389,16 @@ class DemoHandler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    server = ThreadingHTTPServer(("0.0.0.0", PORT), DemoHandler)
+    try:
+        server = ThreadingHTTPServer(("0.0.0.0", PORT), DemoHandler)
+    except OSError as e:
+        print(f"\nCould not start the demo on port {PORT}: {e}")
+        print(f"Something else is already listening there. Either stop it,")
+        print(f"or pick another port:   PORT=8080 python3 local_demo.py\n")
+        ai_manager.stop()
+        sensor_manager.stop()
+        sys.exit(1)
+
     print("=" * 60)
     print(f"Fuel Quality Monitor demo:  http://localhost:{PORT}")
     print("Scenario rotates GOOD -> SUSPECT -> ADULTERATED every "
