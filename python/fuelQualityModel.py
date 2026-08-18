@@ -116,6 +116,17 @@ class FuelQualityModel:
             return self._reject_density_out_of_range(
                 reading, density_val, x, rho_residual
             )
+        
+        wif_val = float(reading["wif"])
+        if wif_val > 10:
+            return self._reject_wif_adulterated(
+                reading, wif_val, x, rho_residual
+            )
+
+        if wif_val > 5:
+            return self._reject_wif_suspect(
+                reading, wif_val, x, rho_residual
+            )
 
         probs = self._forward(x)
         idx = int(np.argmax(probs))
@@ -133,15 +144,13 @@ class FuelQualityModel:
             ]
 
         eth_val = float(reading["ethanol"])
-        wif_val = float(reading["wif"])
         turbidity_val = float(reading["turbidity"])
 
         # Density is already known to be in-band here (the gate above
         # returned early otherwise) — this override only needs to
         # check the other three signals now.
         other_problem = (
-            wif_val > 8
-            or turbidity_val > 12
+            turbidity_val > 12
             or not classify_blend(eth_val)["in_spec"]
         )
 
@@ -216,6 +225,77 @@ class FuelQualityModel:
 
     # -------------------------------------------------------------
 
+    def _reject_wif_adulterated(self, reading, wif_val, x, rho_residual):
+        """Short-circuit path for critically high WIF."""
+
+        adulterated_idx = next(
+            i for i, name in self.labels.items()
+            if name == "ADULTERATED"
+        )
+
+        probs = np.zeros(len(self.labels))
+        probs[adulterated_idx] = 1.0
+
+        signal = (
+            f"Water-in-fuel level ({wif_val:.1f}%) is above the "
+            f"critical threshold of 10%, so this is called adulterated."
+        )
+
+        return {
+            "verdict": "ADULTERATED",
+            "confidence": 1.0,
+            "probs": {
+                self.labels[i]: round(float(p), 3)
+                for i, p in enumerate(probs)
+            },
+            "blend": classify_blend(reading["ethanol"]),
+            "explain": {
+                "density15": round(float(x[3]), 2),
+                "expected_density15":
+                    round(expected_density15(
+                        float(reading["ethanol"])
+                    ), 2),
+                "rho_residual": round(rho_residual, 2),
+                "signals": [signal],
+            },
+        }
+
+
+    def _reject_wif_suspect(self, reading, wif_val, x, rho_residual):
+        """Short-circuit path for elevated WIF."""
+
+        suspect_idx = next(
+            i for i, name in self.labels.items()
+            if name == "SUSPECT"
+        )
+
+        probs = np.zeros(len(self.labels))
+        probs[suspect_idx] = 1.0
+
+        signal = (
+            f"Water-in-fuel level ({wif_val:.1f}%) is above the "
+            f"suspicious threshold of 5%, so this is called suspicious."
+        )
+
+        return {
+            "verdict": "SUSPECT",
+            "confidence": 1.0,
+            "probs": {
+                self.labels[i]: round(float(p), 3)
+                for i, p in enumerate(probs)
+            },
+            "blend": classify_blend(reading["ethanol"]),
+            "explain": {
+                "density15": round(float(x[3]), 2),
+                "expected_density15":
+                    round(expected_density15(
+                        float(reading["ethanol"])
+                    ), 2),
+                "rho_residual": round(rho_residual, 2),
+                "signals": [signal],
+            },
+        }
+    
     @staticmethod
     def _signals(reading, rho_residual):
         """Plain-language reasons, for the app UI and demo video —
@@ -226,49 +306,57 @@ class FuelQualityModel:
         confirmed in-band (predict() short-circuits out-of-band
         density before reaching here — see
         _reject_density_out_of_range()), so there's no density-band
-        check in here anymore; it could never fire."""
+        check in here anymore; it could never fire.
+        """
 
         s = []
 
         eth_val = float(reading["ethanol"])
         wif_val = float(reading["wif"])
 
-        if wif_val > 25:
-            s.append("Free water was found in the fuel.")
-        elif wif_val > 8:
-            # E10/E20 blends are hygroscopic: dissolved water climbs
-            # toward saturation, then phase-separates. Call out the
-            # blend-specific risk instead of a generic warning.
-            if 8 <= eth_val <= 25:
-                s.append("Water is building up in this ethanol blend, "
-                         "raising the phase separation risk common "
-                         "with E10/E20 fuel.")
-            else:
-                s.append("There's more water in the fuel than normal.")
+        # WIF is independent of ethanol percentage.
+        # >10% -> ADULTERATED
+        # >5%  -> SUSPECT
+        if wif_val > 10:
+            s.append(
+                f"Water-in-fuel level ({wif_val:.1f}%) is critically high."
+            )
+        elif wif_val > 5:
+            s.append(
+                f"Water-in-fuel level ({wif_val:.1f}%) is elevated."
+            )
 
         if float(reading["turbidity"]) > 40:
-            s.append("The fuel looks very cloudy, with lots of solid particles.")
+            s.append(
+                "The fuel looks very cloudy, with lots of solid particles."
+            )
         elif float(reading["turbidity"]) > 12:
             s.append("The fuel looks slightly cloudy.")
 
         # Natural petrol density spans roughly +/-25 kg/m3 around
         # nominal, so only flag residuals clearly outside that band.
         if rho_residual > 28:
-            s.append("Fuel density is too high for this ethanol level. "
-                     "Could be kerosene, another solvent, or water "
-                     "mixed in.")
+            s.append(
+                "Fuel density is too high for this ethanol level. "
+                "Could be kerosene, another solvent, or water mixed in."
+            )
         elif rho_residual < -32:
-            s.append("Fuel density is too low for this ethanol level, "
-                     "which is unusual for a clean blend.")
+            s.append(
+                "Fuel density is too low for this ethanol level, "
+                "which is unusual for a clean blend."
+            )
 
         blend = classify_blend(eth_val)
         if not blend["in_spec"]:
-            s.append(f"Ethanol level ({blend['measured']}%) doesn't "
-                     f"match any standard blend (closest is "
-                     f"{blend['nearest']}). Possible over/under-"
-                     f"blending at the pump.")
+            s.append(
+                f"Ethanol level ({blend['measured']}%) doesn't "
+                f"match any standard blend (closest is "
+                f"{blend['nearest']}). Possible over/under-"
+                f"blending at the pump."
+            )
 
         if not s:
             s.append(ALL_CLEAR_SIGNAL)
 
         return s
+    
