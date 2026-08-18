@@ -13,27 +13,10 @@ CONTINUOUS_INTERVAL = 10      # seconds
 CAPTURE_INTERVAL = 0.1        # 100 ms
 CAPTURE_SAMPLE_COUNT = 10
 
-# The MCU's readTurbidityRaw() returns raw 12-bit ADC counts
-# (0-4095). scale_turbidity() first converts that to a plain 0-100
-# index (no direction assumed yet).
 TURBIDITY_ADC_MAX = 4095.0
 
-# Field calibration (2 Aug 2026, real hardware, real fuel samples):
-# this sensor reads HIGHER when fuel is CLEARER — the opposite of
-# the original guess, and the opposite of the physics simulator's
-# training convention (features.py / fuel_simulator.py train with
-# LOW turbidity = clean, HIGH = dirty). Observed bands on the 0-100
-# scaled index:
-#   >= 35        -> clean
-#   30 - 35      -> suspicious / mild haze
-#   < 30          -> adulterated / heavy particulates
-# calibrate_turbidity() inverts and remaps these observed bands onto
-# the simulator's scale (clean ~0-6, suspect ~12-30, adulterated
-# ~40-100) so the feature reaching the model means what the model
-# was trained to interpret. Re-run the dip test and adjust these
-# three constants if the sensor or wiring changes.
-TURBIDITY_FIELD_CLEAN = 35.0
-TURBIDITY_FIELD_SUSPECT = 30.0
+TURBIDITY_BOARD_CLEAN = 70.0
+TURBIDITY_BOARD_DIRTY = 30.0
 
 class SensorManager:
 
@@ -284,28 +267,16 @@ class SensorManager:
         return round(max(0.0, min(100.0, pct)), 2)
 
     def calibrate_turbidity(self, raw_pct):
-        """Maps the sensor's observed 0-100 turbidity index onto the
-        0-100 turbidity feature the AI model was trained on (LOW =
-        clean, HIGH = dirty), using the field-calibrated bands in
-        TURBIDITY_FIELD_CLEAN / TURBIDITY_FIELD_SUSPECT above."""
 
         if raw_pct is None:
             return None
 
-        if raw_pct >= TURBIDITY_FIELD_CLEAN:
-            span = max(1e-6, 100.0 - TURBIDITY_FIELD_CLEAN)
-            frac = max(0.0, min(1.0, (raw_pct - TURBIDITY_FIELD_CLEAN) / span))
-            return round(6.0 - frac * 6.0, 2)                # 35->6, 100->0
+        span = TURBIDITY_BOARD_CLEAN - TURBIDITY_BOARD_DIRTY
+        if abs(span) < 1e-6:
+            return None
 
-        elif raw_pct >= TURBIDITY_FIELD_SUSPECT:
-            span = TURBIDITY_FIELD_CLEAN - TURBIDITY_FIELD_SUSPECT
-            frac = (TURBIDITY_FIELD_CLEAN - raw_pct) / span
-            return round(12.0 + frac * 18.0, 2)               # 35->12, 30->30
-
-        else:
-            span = max(1e-6, TURBIDITY_FIELD_SUSPECT)
-            frac = max(0.0, min(1.0, (TURBIDITY_FIELD_SUSPECT - raw_pct) / span))
-            return round(40.0 + frac * 60.0, 2)               # 30->40, 0->100
+        frac = (TURBIDITY_BOARD_CLEAN - float(raw_pct)) / span
+        return round(max(0.0, min(100.0, frac * 100.0)), 2)
 
     def readSensors(self):
         try:
