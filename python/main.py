@@ -33,11 +33,10 @@ sensorManager.start()
 
 aiManager = AiManager(sensorManager, logger)
 aiManager.start()
-###############################################################
-# WebUI and Instantiate imuManager with it
-###############################################################
 
-# ui = WebUI()
+###############################################################
+# IMU (needs the WebUI instance created above)
+###############################################################
 
 imuManager = ImuManager(logger, ui)
 imuManager.start()

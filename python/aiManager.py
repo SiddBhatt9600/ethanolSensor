@@ -1,4 +1,5 @@
 import json
+import math
 import os
 import threading
 import time
@@ -10,6 +11,8 @@ import mileageEstimator
 from fuelQualityModel import FuelQualityModel
 
 MAX_AI_RECORDS = 1000
+
+AI_HISTORY_FILE = "ai_history.json"
 
 
 CAPTURE_POLL_INTERVAL = 1  # seconds
@@ -57,8 +60,6 @@ class AiManager:
         # Rolling window for anomaly / refuel-drift detection
         #
         self.window = deque(maxlen=ANOMALY_WINDOW)
-
-        self.next_infer = time.time()
 
         # Timestamp of the last button capture already scored, so
         # the worker only reacts to a NEW capture rather than
@@ -108,31 +109,19 @@ class AiManager:
     #
     ###########################################################
 
-    def save_verdict(self, verdict):
+    def save_verdict(self):
+        """Mirror the in-memory verdict cache to disk.
 
-        filename = "ai_history.json"
+        The cache is already the capped, ordered history this file is
+        meant to contain, so it is dumped directly rather than being
+        re-read and re-appended each time. start() truncates the file,
+        so it is a per-session log, not durable storage.
+        """
+        with self._lock:
+            snapshot = list(self.verdict_cache)
 
-        history = []
-
-        if os.path.exists(filename):
-
-            try:
-
-                with open(filename, "r") as fp:
-
-                    history = json.load(fp)
-
-            except Exception:
-
-                history = []
-
-        history.append(verdict)
-
-        history = history[-MAX_AI_RECORDS:]
-
-        with open(filename, "w") as fp:
-
-            json.dump(history, fp, indent=4)
+        with open(AI_HISTORY_FILE, "w") as fp:
+            json.dump(snapshot, fp, indent=4)
 
     ###########################################################
     #
@@ -140,7 +129,15 @@ class AiManager:
     #
     ###########################################################
 
-    def check_anomaly(self, reading):
+    def record_and_check_anomaly(self, reading):
+        """Compare this reading against the rolling baseline, then fold
+        it into that baseline.
+
+        Note the side effect: the reading is appended to self.window
+        before returning, so calling this twice with the same reading
+        pollutes the baseline with a duplicate. It is called exactly
+        once per scored reading, from _score().
+        """
 
         keys = ["ethanol", "wif", "turbidity", "density"]
 
@@ -168,32 +165,24 @@ class AiManager:
                     continue
 
                 mean = sum(values) / len(values)
-
                 var = sum((v - mean) ** 2 for v in values) / len(values)
-
                 std = var ** 0.5
 
+                # A flat baseline has no meaningful z-score; dividing
+                # by it would make any change look infinitely anomalous.
                 if std < 1e-6:
                     continue
 
                 z = abs(float(current) - mean) / std
 
                 if z > ANOMALY_Z:
-
                     anomalies.append({
-
                         "type": "drift",
-
                         "parameter": key,
-
                         "z_score": round(z, 2),
-
                         "baseline_mean": round(mean, 2),
-
-                        "value": round(float(reading[key]), 2),
-
-                        "reason": None
-
+                        "value": round(float(current), 2),
+                        "reason": None,
                     })
 
         self.window.append(reading)
@@ -235,143 +224,165 @@ class AiManager:
             "mileage": None,
         }
 
-    def infer(self, reading):
+    REQUIRED_FIELDS = ["temp", "ethanol", "wif", "turbidity", "density"]
 
-        # Defense in depth: sensorManager now rejects implausible/
-        # None readings before they're stored, but a reading loaded
-        # from an old sensor_history.json (written before that fix)
-        # could still have a stray None. Fail with a clear message
-        # instead of a cryptic float(None) crash deep in numpy.
-        required = ["temp", "ethanol", "wif", "turbidity", "density"]
-        if not all(isinstance(reading.get(k), (int, float))
-                   for k in required):
+    @staticmethod
+    def _has_scorable_fields(reading):
+        """Every field the model needs is present AND a finite number.
+
+        Checking the values rather than just the keys matters:
+        SensorManager.average() leaves a key present but None when
+        every sample in a capture window was rejected (probe out of
+        the fuel), and readings loaded from an old history file can
+        carry a stray None from before the plausibility gate existed.
+
+        Finiteness is checked separately because isinstance(x, float)
+        is True for NaN — and a NaN slipping through would compare
+        False against every threshold and be judged clean. See
+        fuelQualityModel._require_finite().
+        """
+        for key in AiManager.REQUIRED_FIELDS:
+            value = reading.get(key)
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                return False
+            if not math.isfinite(float(value)):
+                return False
+        return True
+
+    @staticmethod
+    def _quality_anomalies(result):
+        """The verdict's own reasons, restated as anomaly entries.
+
+        Drift (z-score) anomalies only fire on a SUDDEN change against
+        the rolling baseline, so fuel that has been consistently bad
+        for a while — no drift event, it simply IS the baseline now —
+        would otherwise show an empty anomalies list next to a
+        SUSPECT/ADULTERATED verdict. Folding the explanation in here
+        keeps that list from being misleadingly empty.
+        """
+        if result["verdict"] == "GOOD":
+            return []
+
+        return [
+            {
+                "type": "quality",
+                "parameter": "quality",
+                "z_score": None,
+                "baseline_mean": None,
+                "value": None,
+                "reason": reason,
+            }
+            for reason in result["explain"]["signals"]
+        ]
+
+    def _score(self, reading, track_drift):
+        """Shared scoring core behind both public entry points, so the
+        two can never disagree about the same reading.
+
+        track_drift owns the rolling baseline: only the worker path
+        passes True. The on-demand capture path passes False because
+        the worker has already folded that same capture into the
+        window — letting both record it would count one capture twice
+        and skew the baseline it is measured against.
+        """
+        result = self.model.predict(reading)
+
+        anomalies = (
+            self.record_and_check_anomaly(reading) if track_drift else []
+        )
+        anomalies.extend(self._quality_anomalies(result))
+
+        return {
+            "timestamp": self._timestamp(),
+            "reading": reading,
+            "verdict": result["verdict"],
+            "confidence": result["confidence"],
+            "probs": result["probs"],
+            "model_probs": result.get("model_probs"),
+            "blend": result["blend"],
+            "explain": result["explain"],
+            "anomalies": anomalies,
+            "mileage": self._mileage(reading, result["verdict"]),
+        }
+
+    def infer(self, reading):
+        """Score one reading and fold it into the drift baseline.
+        Raises ValueError on an unscorable reading — the caller (the
+        worker) treats that as a bug worth logging, not a normal
+        outcome."""
+
+        if not self._has_scorable_fields(reading):
             raise ValueError(
                 f"Cannot classify reading with missing/invalid "
                 f"fields: {reading}"
             )
 
-        result = self.model.predict(reading)
-
-        anomalies = self.check_anomaly(reading)
-
-        # Anomalies must always be present whenever there is any
-        # suspicion or adulteration. Drift (z-score) anomalies only
-        # fire on a SUDDEN change against the rolling baseline, so
-        # fuel that has been consistently bad for a while (no drift
-        # event, it just IS the new baseline) would otherwise show
-        # an empty anomalies list next to a SUSPECT/ADULTERATED
-        # verdict. Fold in the same reasons already computed for the
-        # "Why" explanation as "quality"-type entries whenever the
-        # verdict isn't GOOD, so the list is never misleadingly empty.
-        if result["verdict"] != "GOOD":
-            for reason in result["explain"]["signals"]:
-                anomalies.append({
-                    "type": "quality",
-                    "parameter": "quality",
-                    "z_score": None,
-                    "baseline_mean": None,
-                    "value": None,
-                    "reason": reason,
-                })
-
-        mileage = self._mileage(reading, result["verdict"])
-
-        verdict = {
-
-            "timestamp": self._timestamp(),
-
-            "reading": reading,
-
-            "verdict": result["verdict"],
-
-            "confidence": result["confidence"],
-
-            "probs": result["probs"],
-
-            "blend": result["blend"],
-
-            "explain": result["explain"],
-
-            "anomalies": anomalies,
-
-            "mileage": mileage
-
-        }
-
-        return verdict
+        return self._score(reading, track_drift=True)
 
     ###########################################################
 
     def infer_capture(self, capture):
-
-        """
-        Scores a button capture (10-sample average) on demand.
-        Called via REST when the app requests a spot verdict.
-        """
+        """Score a button capture (10-sample average) on demand.
+        Called via REST when the app requests a spot verdict, where an
+        unusable capture is a normal thing to report rather than raise
+        on."""
 
         avg = capture.get("average", {})
 
-        required = ["temp", "ethanol", "wif", "turbidity", "density"]
+        if not self._has_scorable_fields(avg):
+            return {"error": "no valid capture available"}
 
-        # Check values are real numbers, not just that the keys
-        # exist — SensorManager.average() can leave a key present
-        # but None if every sample in the capture window was
-        # rejected (e.g. probe out of the fuel for that capture).
-        if not all(isinstance(avg.get(k), (int, float)) for k in required):
+        verdict = self._score(avg, track_drift=False)
+        verdict["source"] = "button_capture"
+        # Alias kept for the dashboard's shared renderer, which reads
+        # "average" for capture verdicts and "reading" for live ones.
+        verdict["average"] = avg
 
-            return {
-
-                "error": "no valid capture available"
-
-            }
-
-        result = self.model.predict(avg)
-
-        anomalies = []
-        if result["verdict"] != "GOOD":
-            for reason in result["explain"]["signals"]:
-                anomalies.append({
-                    "type": "quality",
-                    "parameter": "quality",
-                    "z_score": None,
-                    "baseline_mean": None,
-                    "value": None,
-                    "reason": reason,
-                })
-
-        mileage = self._mileage(avg, result["verdict"])
-
-        return {
-
-            "timestamp": self._timestamp(),
-
-            "source": "button_capture",
-
-            "average": avg,
-
-            "reading": avg,
-
-            "verdict": result["verdict"],
-
-            "confidence": result["confidence"],
-
-            "probs": result["probs"],
-
-            "blend": result["blend"],
-
-            "explain": result["explain"],
-
-            "anomalies": anomalies,
-
-            "mileage": mileage
-
-        }
+        return verdict
 
     ###########################################################
     #
     # Worker Thread
     #
     ###########################################################
+
+    # Core sensors that must be present for a capture to be worth
+    # scoring. Density is excluded on purpose: it is user-entered, and
+    # a capture without it still produces a useful "awaiting density"
+    # card rather than being thrown away.
+    CORE_CAPTURE_FIELDS = ["temp", "ethanol", "wif", "turbidity"]
+
+    def _handle_new_capture(self, capture_ts, avg):
+        """Score one freshly-landed capture and record the verdict."""
+
+        if not all(isinstance(avg.get(k), (int, float))
+                   for k in self.CORE_CAPTURE_FIELDS):
+            self.logger.warning(
+                "Button capture had no usable sensor readings "
+                "(probe in air / disconnected?) — skipping AI verdict "
+                "for this capture."
+            )
+            return
+
+        reading = dict(avg)
+        reading.setdefault("timestamp", capture_ts)
+
+        if reading.get("density") is None:
+            verdict = self._awaiting_density_verdict(reading)
+        else:
+            verdict = self.infer(reading)
+
+        with self._lock:
+            self.verdict_cache.append(verdict)
+            self.verdict_cache = self.verdict_cache[-MAX_AI_RECORDS:]
+
+        self.save_verdict()
+
+        self.logger.info(
+            f"AI Verdict : {verdict['verdict']} ({verdict['confidence']})"
+        )
+        if verdict["anomalies"]:
+            self.logger.info(f"AI Anomaly : {verdict['anomalies']}")
 
     def _worker(self):
         """Every value the dashboard shows — cards, verdict, verdict
@@ -384,76 +395,22 @@ class AiManager:
 
         while self._running:
 
-            now = time.time()
+            capture = self.sensor_manager.get_latest_capture()
+            capture_ts = capture.get("timestamp") if capture else None
 
-            if now >= self.next_infer:
+            if capture_ts and capture_ts != self._last_capture_timestamp:
 
-                capture = self.sensor_manager.get_latest_capture()
-                capture_ts = capture.get("timestamp") if capture else None
+                # Marked as seen before scoring, not after: a capture
+                # that throws must not be retried forever on every tick.
+                self._last_capture_timestamp = capture_ts
 
-                if capture_ts and capture_ts != self._last_capture_timestamp:
+                try:
+                    self._handle_new_capture(capture_ts,
+                                             capture.get("average", {}))
+                except Exception as e:
+                    self.logger.exception(e)
 
-                    avg = capture.get("average", {})
-                    core_fields = ["temp", "ethanol", "wif", "turbidity"]
-
-                    if all(
-                        isinstance(avg.get(k), (int, float))
-                        for k in core_fields
-                    ):
-
-                        self._last_capture_timestamp = capture_ts
-
-                        reading = dict(avg)
-                        reading.setdefault("timestamp", capture_ts)
-
-                        try:
-
-                            if reading.get("density") is None:
-                                verdict = self._awaiting_density_verdict(reading)
-                            else:
-                                verdict = self.infer(reading)
-
-                            with self._lock:
-
-                                self.verdict_cache.append(verdict)
-
-                                self.verdict_cache = \
-                                    self.verdict_cache[-MAX_AI_RECORDS:]
-
-                            self.save_verdict(verdict)
-
-                            self.logger.info(
-
-                                f"AI Verdict : {verdict['verdict']} "
-                                f"({verdict['confidence']})"
-
-                            )
-
-                            if verdict["anomalies"]:
-
-                                self.logger.info(
-
-                                    f"AI Anomaly : {verdict['anomalies']}"
-
-                                )
-
-                        except Exception as e:
-
-                            self.logger.exception(e)
-
-                    else:
-
-                        self._last_capture_timestamp = capture_ts
-
-                        self.logger.warning(
-                            "Button capture had no usable sensor "
-                            "readings (probe in air / disconnected?) "
-                            "— skipping AI verdict for this capture."
-                        )
-
-                self.next_infer = now + CAPTURE_POLL_INTERVAL
-
-            time.sleep(0.25)
+            time.sleep(CAPTURE_POLL_INTERVAL)
 
     ###########################################################
     #
@@ -466,34 +423,27 @@ class AiManager:
         if self._running:
             return
 
-        self.verdict_cache.clear()
+        # Under the lock: get_latest_verdicts()/get_current_verdict()
+        # can be serving a REST request on another thread while this
+        # resets the cache.
+        with self._lock:
+            self.verdict_cache.clear()
+            self.window.clear()
+            self._last_capture_timestamp = None
 
-        self.window.clear()
-
-        self._last_capture_timestamp = None
-
-        with open("ai_history.json", "w") as fp:
+        with open(AI_HISTORY_FILE, "w") as fp:
             json.dump([], fp, indent=4)
 
         self._running = True
 
-        self.next_infer = time.time()
-
         self._thread = threading.Thread(
-
             target=self._worker,
-
             name="AiManager",
-
-            daemon=True
-
+            daemon=True,
         )
-
         self._thread.start()
 
-        self.logger.info(
-            "AiManager Started."
-        )
+        self.logger.info("AiManager Started.")
 
     ###########################################################
 
@@ -501,23 +451,15 @@ class AiManager:
 
         self._running = False
 
-        if (
-
-            self._thread is not None
-
-            and
-
-            threading.current_thread() != self._thread
-
-        ):
-
+        # Guard against joining from inside the worker itself, which
+        # would deadlock.
+        if (self._thread is not None
+                and threading.current_thread() != self._thread):
             self._thread.join()
 
         self._thread = None
 
-        self.logger.info(
-            "AiManager Stopped."
-        )
+        self.logger.info("AiManager Stopped.")
 
     ###########################################################
     #
@@ -528,7 +470,6 @@ class AiManager:
     def get_latest_verdicts(self, count=10):
 
         with self._lock:
-
             return self.verdict_cache[-count:]
 
     ###########################################################
@@ -536,15 +477,7 @@ class AiManager:
     def get_current_verdict(self):
 
         with self._lock:
-
             if not self.verdict_cache:
-
-                return {
-
-                    "verdict": "UNKNOWN",
-
-                    "confidence": 0
-
-                }
+                return {"verdict": "UNKNOWN", "confidence": 0}
 
             return self.verdict_cache[-1]

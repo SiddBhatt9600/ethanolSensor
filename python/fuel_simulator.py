@@ -113,7 +113,7 @@ def gen_good():
 
 def gen_suspect():
     """Borderline fuel: near-saturation water, mild solids, off-blend."""
-    mode = RNG.integers(0, 3)
+    mode = RNG.integers(0, 4)
     temp = RNG.uniform(18, 55)
 
     if mode == 0:
@@ -131,13 +131,21 @@ def gen_suspect():
         rho15 = _blend_density_15(_petrol_base_density(), e)
         wif = RNG.uniform(0, 6)
         turbidity = RNG.uniform(12, 30)
-    else:
+    elif mode == 2:
         # Off-blend ethanol: pump declares E10/E20, sensor reads way off
         ethanol_pct = RNG.uniform(30, 55)
         e = ethanol_pct / 100.0
         rho15 = _blend_density_15(_petrol_base_density(), e)
         wif = RNG.uniform(1, 8)
         turbidity = RNG.uniform(0, 10)
+    else:
+        # Pure/near-pure ethanol (90-100%) with dissolved water
+        ethanol_pct = RNG.uniform(90, 100)
+        e = ethanol_pct / 100.0
+        w = RNG.uniform(0.05, 0.15)             # 5-15% v/v water
+        rho15 = _blend_density_15(_petrol_base_density(), e, water_frac=w)
+        wif = RNG.uniform(8, 18)                # water present but not free
+        turbidity = RNG.uniform(2, 10)
 
     return {
         "temp": temp,
@@ -150,7 +158,7 @@ def gen_suspect():
 
 def gen_adulterated():
     """Clear adulteration: free water, kerosene cut, or heavy solids."""
-    mode = RNG.integers(0, 3)
+    mode = RNG.integers(0, 4)
     temp = RNG.uniform(18, 55)
 
     if mode == 0:
@@ -170,7 +178,7 @@ def gen_adulterated():
                                   kerosene_frac=k)
         wif = RNG.uniform(0, 8)
         turbidity = RNG.uniform(0, 12)          # kerosene mixes clear!
-    else:
+    elif mode == 2:
         # Heavy particulate / sludge contamination
         ethanol_pct = RNG.uniform(0, 25)
         e = ethanol_pct / 100.0
@@ -178,6 +186,14 @@ def gen_adulterated():
             + RNG.uniform(1, 6)                 # solids raise density
         wif = RNG.uniform(2, 20)
         turbidity = RNG.uniform(45, 100)
+    else:
+        # Pure ethanol (95-100%) with excessive water (free water layer)
+        ethanol_pct = RNG.uniform(95, 100)
+        e = ethanol_pct / 100.0
+        w = RNG.uniform(0.15, 0.35)             # 15-35% v/v water
+        rho15 = _blend_density_15(_petrol_base_density(), e, water_frac=w)
+        wif = RNG.uniform(20, 70)               # free water present
+        turbidity = RNG.uniform(8, 25)
 
     return {
         "temp": temp,
