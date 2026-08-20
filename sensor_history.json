@@ -166,5 +166,2277 @@
         "wif": 30,
         "turbidity": 395,
         "density": 737.37
+    },
+    {
+        "timestamp": "2026-07-21T00:12:30.903360+05:30",
+        "temp": 40,
+        "ethanol": 10,
+        "wif": 0,
+        "turbidity": 3.98,
+        "density": 727.87
+    },
+    {
+        "timestamp": "2026-07-21T00:12:32.938861+05:30",
+        "temp": 38,
+        "ethanol": 9,
+        "wif": 4,
+        "turbidity": 1.98,
+        "density": 742.42
+    },
+    {
+        "timestamp": "2026-07-21T00:12:34.960125+05:30",
+        "temp": 41,
+        "ethanol": 10,
+        "wif": 0,
+        "turbidity": 3.98,
+        "density": 728.11
+    },
+    {
+        "timestamp": "2026-07-21T00:12:36.990273+05:30",
+        "temp": 31,
+        "ethanol": 20,
+        "wif": 0,
+        "turbidity": 2.98,
+        "density": 749.55
+    },
+    {
+        "timestamp": "2026-07-21T00:12:39.017167+05:30",
+        "temp": 41,
+        "ethanol": 11,
+        "wif": 2,
+        "turbidity": 3.98,
+        "density": 723.42
+    },
+    {
+        "timestamp": "2026-07-21T00:12:41.048822+05:30",
+        "temp": 32,
+        "ethanol": 9,
+        "wif": 3,
+        "turbidity": 0.98,
+        "density": 725.78
+    },
+    {
+        "timestamp": "2026-07-21T00:12:43.083074+05:30",
+        "temp": 40,
+        "ethanol": 22,
+        "wif": 3,
+        "turbidity": 1.98,
+        "density": 744.38
+    },
+    {
+        "timestamp": "2026-07-21T00:12:45.121862+05:30",
+        "temp": 30,
+        "ethanol": 22,
+        "wif": 4,
+        "turbidity": 5.98,
+        "density": 740.68
+    },
+    {
+        "timestamp": "2026-07-21T00:12:47.156111+05:30",
+        "temp": 32,
+        "ethanol": 19,
+        "wif": 1,
+        "turbidity": 5.98,
+        "density": 737.31
+    },
+    {
+        "timestamp": "2026-07-21T00:12:49.185241+05:30",
+        "temp": 41,
+        "ethanol": 22,
+        "wif": 2,
+        "turbidity": 3.98,
+        "density": 729.4
+    },
+    {
+        "timestamp": "2026-07-21T00:12:51.212270+05:30",
+        "temp": 40,
+        "ethanol": 18,
+        "wif": 3,
+        "turbidity": 5.98,
+        "density": 730.6
+    },
+    {
+        "timestamp": "2026-08-04T18:12:25.953054+05:30",
+        "temp": 31,
+        "ethanol": 20,
+        "wif": 1,
+        "turbidity": 1.98,
+        "density": 747.42
+    },
+    {
+        "timestamp": "2026-08-04T18:12:27.988774+05:30",
+        "temp": 28,
+        "ethanol": 21,
+        "wif": 4,
+        "turbidity": 0.0,
+        "density": 739.29
+    },
+    {
+        "timestamp": "2026-08-04T18:12:30.013990+05:30",
+        "temp": 38,
+        "ethanol": 21,
+        "wif": 1,
+        "turbidity": 4.98,
+        "density": 729.3
+    },
+    {
+        "timestamp": "2026-08-04T18:12:32.047193+05:30",
+        "temp": 35,
+        "ethanol": 11,
+        "wif": 2,
+        "turbidity": 4.98,
+        "density": 731.54
+    },
+    {
+        "timestamp": "2026-08-04T18:12:34.070215+05:30",
+        "temp": 32,
+        "ethanol": 11,
+        "wif": 1,
+        "turbidity": 4.98,
+        "density": 732.15
+    },
+    {
+        "timestamp": "2026-08-04T18:12:36.100578+05:30",
+        "temp": 39,
+        "ethanol": 21,
+        "wif": 0,
+        "turbidity": 4.98,
+        "density": 736.44
+    },
+    {
+        "timestamp": "2026-08-04T18:12:38.121062+05:30",
+        "temp": 42,
+        "ethanol": 10,
+        "wif": 1,
+        "turbidity": 3.98,
+        "density": 722.51
+    },
+    {
+        "timestamp": "2026-08-04T18:12:40.159926+05:30",
+        "temp": 26,
+        "ethanol": 9,
+        "wif": 3,
+        "turbidity": 0.98,
+        "density": 738.5
+    },
+    {
+        "timestamp": "2026-08-04T18:12:42.190653+05:30",
+        "temp": 25,
+        "ethanol": 11,
+        "wif": 2,
+        "turbidity": 3.98,
+        "density": 755.97
+    },
+    {
+        "timestamp": "2026-08-04T18:12:44.217659+05:30",
+        "temp": 27,
+        "ethanol": 19,
+        "wif": 2,
+        "turbidity": 5.98,
+        "density": 753.39
+    },
+    {
+        "timestamp": "2026-08-04T18:12:46.239775+05:30",
+        "temp": 33,
+        "ethanol": 10,
+        "wif": 3,
+        "turbidity": 2.98,
+        "density": 737.76
+    },
+    {
+        "timestamp": "2026-08-04T18:12:48.268639+05:30",
+        "temp": 27,
+        "ethanol": 10,
+        "wif": 3,
+        "turbidity": 0.98,
+        "density": 736.02
+    },
+    {
+        "timestamp": "2026-08-04T18:12:50.297554+05:30",
+        "temp": 36,
+        "ethanol": 22,
+        "wif": 2,
+        "turbidity": 0.98,
+        "density": 731.5
+    },
+    {
+        "timestamp": "2026-08-04T18:12:52.319758+05:30",
+        "temp": 40,
+        "ethanol": 20,
+        "wif": 2,
+        "turbidity": 3.98,
+        "density": 745.75
+    },
+    {
+        "timestamp": "2026-08-04T18:12:54.346870+05:30",
+        "temp": 39,
+        "ethanol": 21,
+        "wif": 2,
+        "turbidity": 0.98,
+        "density": 744.02
+    },
+    {
+        "timestamp": "2026-08-04T18:12:56.371986+05:30",
+        "temp": 38,
+        "ethanol": 20,
+        "wif": 1,
+        "turbidity": 1.98,
+        "density": 732.91
+    },
+    {
+        "timestamp": "2026-08-04T18:12:58.406087+05:30",
+        "temp": 39,
+        "ethanol": 19,
+        "wif": 3,
+        "turbidity": 2.98,
+        "density": 727.23
+    },
+    {
+        "timestamp": "2026-08-04T18:13:00.433691+05:30",
+        "temp": 36,
+        "ethanol": 10,
+        "wif": 1,
+        "turbidity": 5.98,
+        "density": 730.58
+    },
+    {
+        "timestamp": "2026-08-04T18:13:02.464051+05:30",
+        "temp": 31,
+        "ethanol": 10,
+        "wif": 1,
+        "turbidity": 4.98,
+        "density": 743.9
+    },
+    {
+        "timestamp": "2026-08-04T18:13:04.493247+05:30",
+        "temp": 36,
+        "ethanol": 10,
+        "wif": 2,
+        "turbidity": 0.0,
+        "density": 722.88
+    },
+    {
+        "timestamp": "2026-08-04T18:13:06.517736+05:30",
+        "temp": 24,
+        "ethanol": 10,
+        "wif": 1,
+        "turbidity": 2.98,
+        "density": 748.23
+    },
+    {
+        "timestamp": "2026-08-04T18:13:08.546761+05:30",
+        "temp": 28,
+        "ethanol": 10,
+        "wif": 2,
+        "turbidity": 2.98,
+        "density": 739.22
+    },
+    {
+        "timestamp": "2026-08-04T18:13:10.565035+05:30",
+        "temp": 36,
+        "ethanol": 18,
+        "wif": 3,
+        "turbidity": 0.98,
+        "density": 738.78
+    },
+    {
+        "timestamp": "2026-08-04T18:13:12.595201+05:30",
+        "temp": 34,
+        "ethanol": 9,
+        "wif": 2,
+        "turbidity": 5.98,
+        "density": 726.83
+    },
+    {
+        "timestamp": "2026-08-04T18:13:14.623342+05:30",
+        "temp": 30,
+        "ethanol": 19,
+        "wif": 2,
+        "turbidity": 2.98,
+        "density": 734.54
+    },
+    {
+        "timestamp": "2026-08-04T18:13:16.649727+05:30",
+        "temp": 29,
+        "ethanol": 20,
+        "wif": 1,
+        "turbidity": 0.0,
+        "density": 745.38
+    },
+    {
+        "timestamp": "2026-08-04T18:13:18.676592+05:30",
+        "temp": 32,
+        "ethanol": 21,
+        "wif": 1,
+        "turbidity": 2.98,
+        "density": 731.58
+    },
+    {
+        "timestamp": "2026-08-04T18:13:20.701169+05:30",
+        "temp": 32,
+        "ethanol": 19,
+        "wif": 4,
+        "turbidity": 3.98,
+        "density": 731.02
+    },
+    {
+        "timestamp": "2026-08-04T18:13:22.731810+05:30",
+        "temp": 25,
+        "ethanol": 11,
+        "wif": 2,
+        "turbidity": 5.98,
+        "density": 754.54
+    },
+    {
+        "timestamp": "2026-08-04T18:13:24.756931+05:30",
+        "temp": 25,
+        "ethanol": 22,
+        "wif": 1,
+        "turbidity": 2.98,
+        "density": 740.47
+    },
+    {
+        "timestamp": "2026-08-04T18:13:26.787814+05:30",
+        "temp": 34,
+        "ethanol": 18,
+        "wif": 14,
+        "turbidity": 10.99,
+        "density": 737.7
+    },
+    {
+        "timestamp": "2026-08-04T18:13:28.813331+05:30",
+        "temp": 34,
+        "ethanol": 13,
+        "wif": 12,
+        "turbidity": 12.99,
+        "density": 742.75
+    },
+    {
+        "timestamp": "2026-08-04T18:13:30.838173+05:30",
+        "temp": 35,
+        "ethanol": 12,
+        "wif": 20,
+        "turbidity": 11.99,
+        "density": 746.4
+    },
+    {
+        "timestamp": "2026-08-04T18:13:32.873823+05:30",
+        "temp": 32,
+        "ethanol": 11,
+        "wif": 19,
+        "turbidity": 5.98,
+        "density": 747.93
+    },
+    {
+        "timestamp": "2026-08-04T18:13:34.901030+05:30",
+        "temp": 36,
+        "ethanol": 17,
+        "wif": 15,
+        "turbidity": 5.98,
+        "density": 746.09
+    },
+    {
+        "timestamp": "2026-08-04T18:13:36.929739+05:30",
+        "temp": 29,
+        "ethanol": 20,
+        "wif": 16,
+        "turbidity": 12.99,
+        "density": 741.21
+    },
+    {
+        "timestamp": "2026-08-04T18:13:38.960335+05:30",
+        "temp": 29,
+        "ethanol": 13,
+        "wif": 19,
+        "turbidity": 10.99,
+        "density": 754.91
+    },
+    {
+        "timestamp": "2026-08-04T18:13:40.992747+05:30",
+        "temp": 30,
+        "ethanol": 14,
+        "wif": 16,
+        "turbidity": 6.98,
+        "density": 748.68
+    },
+    {
+        "timestamp": "2026-08-04T18:13:43.014949+05:30",
+        "temp": 25,
+        "ethanol": 20,
+        "wif": 17,
+        "turbidity": 4.98,
+        "density": 745.56
+    },
+    {
+        "timestamp": "2026-08-04T18:13:45.047628+05:30",
+        "temp": 35,
+        "ethanol": 18,
+        "wif": 18,
+        "turbidity": 12.99,
+        "density": 733.19
+    },
+    {
+        "timestamp": "2026-08-04T18:13:47.081290+05:30",
+        "temp": 39,
+        "ethanol": 19,
+        "wif": 13,
+        "turbidity": 4.98,
+        "density": 747.39
+    },
+    {
+        "timestamp": "2026-08-04T18:13:49.111024+05:30",
+        "temp": 34,
+        "ethanol": 14,
+        "wif": 11,
+        "turbidity": 12.99,
+        "density": 746.51
+    },
+    {
+        "timestamp": "2026-08-04T18:13:51.132391+05:30",
+        "temp": 28,
+        "ethanol": 16,
+        "wif": 15,
+        "turbidity": 9.99,
+        "density": 733.06
+    },
+    {
+        "timestamp": "2026-08-04T18:13:53.154140+05:30",
+        "temp": 37,
+        "ethanol": 18,
+        "wif": 20,
+        "turbidity": 7.99,
+        "density": 730.64
+    },
+    {
+        "timestamp": "2026-08-04T18:13:55.176462+05:30",
+        "temp": 31,
+        "ethanol": 15,
+        "wif": 10,
+        "turbidity": 12.99,
+        "density": 740.99
+    },
+    {
+        "timestamp": "2026-08-04T18:13:57.215876+05:30",
+        "temp": 29,
+        "ethanol": 20,
+        "wif": 14,
+        "turbidity": 13.99,
+        "density": 744.67
+    },
+    {
+        "timestamp": "2026-08-04T18:13:59.242518+05:30",
+        "temp": 39,
+        "ethanol": 18,
+        "wif": 16,
+        "turbidity": 9.99,
+        "density": 727.82
+    },
+    {
+        "timestamp": "2026-08-04T18:14:01.275928+05:30",
+        "temp": 31,
+        "ethanol": 16,
+        "wif": 10,
+        "turbidity": 6.98,
+        "density": 739.9
+    },
+    {
+        "timestamp": "2026-08-04T18:14:03.293341+05:30",
+        "temp": 25,
+        "ethanol": 18,
+        "wif": 13,
+        "turbidity": 6.98,
+        "density": 749.31
+    },
+    {
+        "timestamp": "2026-08-04T18:14:05.342307+05:30",
+        "temp": 27,
+        "ethanol": 10,
+        "wif": 17,
+        "turbidity": 8.99,
+        "density": 754.87
+    },
+    {
+        "timestamp": "2026-08-04T18:14:07.371776+05:30",
+        "temp": 37,
+        "ethanol": 17,
+        "wif": 12,
+        "turbidity": 11.99,
+        "density": 727.55
+    },
+    {
+        "timestamp": "2026-08-04T18:14:09.393049+05:30",
+        "temp": 27,
+        "ethanol": 22,
+        "wif": 18,
+        "turbidity": 8.99,
+        "density": 746.93
+    },
+    {
+        "timestamp": "2026-08-04T18:14:11.419415+05:30",
+        "temp": 25,
+        "ethanol": 14,
+        "wif": 10,
+        "turbidity": 8.99,
+        "density": 736.05
+    },
+    {
+        "timestamp": "2026-08-04T18:14:13.451707+05:30",
+        "temp": 34,
+        "ethanol": 17,
+        "wif": 11,
+        "turbidity": 10.99,
+        "density": 738.24
+    },
+    {
+        "timestamp": "2026-08-04T18:14:15.476687+05:30",
+        "temp": 38,
+        "ethanol": 16,
+        "wif": 13,
+        "turbidity": 11.99,
+        "density": 737.52
+    },
+    {
+        "timestamp": "2026-08-04T18:14:17.507105+05:30",
+        "temp": 41,
+        "ethanol": 18,
+        "wif": 15,
+        "turbidity": 11.99,
+        "density": 745.68
+    },
+    {
+        "timestamp": "2026-08-04T18:14:19.537137+05:30",
+        "temp": 35,
+        "ethanol": 18,
+        "wif": 17,
+        "turbidity": 6.98,
+        "density": 734.01
+    },
+    {
+        "timestamp": "2026-08-04T18:14:21.642872+05:30",
+        "temp": 36,
+        "ethanol": 13,
+        "wif": 18,
+        "turbidity": 10.99,
+        "density": 744.18
+    },
+    {
+        "timestamp": "2026-08-04T18:14:23.669961+05:30",
+        "temp": 26,
+        "ethanol": 18,
+        "wif": 10,
+        "turbidity": 10.99,
+        "density": 739.68
+    },
+    {
+        "timestamp": "2026-08-04T18:14:25.693420+05:30",
+        "temp": 42,
+        "ethanol": 21,
+        "wif": 18,
+        "turbidity": 8.99,
+        "density": 745.89
+    },
+    {
+        "timestamp": "2026-08-04T18:14:27.750408+05:30",
+        "temp": 33,
+        "ethanol": 0,
+        "wif": 4,
+        "turbidity": 4.98,
+        "density": 745.85
+    },
+    {
+        "timestamp": "2026-08-04T18:14:29.776705+05:30",
+        "temp": 31,
+        "ethanol": 14,
+        "wif": 82,
+        "turbidity": 29.99,
+        "density": 746.58
+    },
+    {
+        "timestamp": "2026-08-04T18:14:31.804098+05:30",
+        "temp": 25,
+        "ethanol": 15,
+        "wif": 38,
+        "turbidity": 34.99,
+        "density": 746.56
+    },
+    {
+        "timestamp": "2026-08-04T18:14:33.841831+05:30",
+        "temp": 38,
+        "ethanol": 22,
+        "wif": 67,
+        "turbidity": 31.99,
+        "density": 748.03
+    },
+    {
+        "timestamp": "2026-08-04T18:14:35.881684+05:30",
+        "temp": 39,
+        "ethanol": 9,
+        "wif": 88,
+        "turbidity": 33.99,
+        "density": 752.67
+    },
+    {
+        "timestamp": "2026-08-04T18:14:37.911744+05:30",
+        "temp": 40,
+        "ethanol": 11,
+        "wif": 1,
+        "turbidity": 8.99,
+        "density": 749.15
+    },
+    {
+        "timestamp": "2026-08-04T18:14:39.948705+05:30",
+        "temp": 27,
+        "ethanol": 14,
+        "wif": 61,
+        "turbidity": 39.0,
+        "density": 747.02
+    },
+    {
+        "timestamp": "2026-08-04T18:14:41.971719+05:30",
+        "temp": 30,
+        "ethanol": 11,
+        "wif": 6,
+        "turbidity": 8.99,
+        "density": 751.47
+    },
+    {
+        "timestamp": "2026-08-04T18:14:43.994845+05:30",
+        "temp": 41,
+        "ethanol": 9,
+        "wif": 0,
+        "turbidity": 1.98,
+        "density": 736.87
+    },
+    {
+        "timestamp": "2026-08-04T18:14:46.026771+05:30",
+        "temp": 36,
+        "ethanol": 12,
+        "wif": 3,
+        "turbidity": 1.98,
+        "density": 754.51
+    },
+    {
+        "timestamp": "2026-08-04T18:14:48.060372+05:30",
+        "temp": 41,
+        "ethanol": 12,
+        "wif": 1,
+        "turbidity": 7.99,
+        "density": 748.94
+    },
+    {
+        "timestamp": "2026-08-04T18:14:50.089086+05:30",
+        "temp": 38,
+        "ethanol": 11,
+        "wif": 45,
+        "turbidity": 54.99,
+        "density": 741.54
+    },
+    {
+        "timestamp": "2026-08-04T18:14:52.118122+05:30",
+        "temp": 41,
+        "ethanol": 11,
+        "wif": 2,
+        "turbidity": 1.98,
+        "density": 746.21
+    },
+    {
+        "timestamp": "2026-08-04T18:14:54.144235+05:30",
+        "temp": 32,
+        "ethanol": 12,
+        "wif": 69,
+        "turbidity": 49.99,
+        "density": 760.42
+    },
+    {
+        "timestamp": "2026-08-04T18:14:56.170678+05:30",
+        "temp": 33,
+        "ethanol": 11,
+        "wif": 87,
+        "turbidity": 54.99,
+        "density": 751.99
+    },
+    {
+        "timestamp": "2026-08-04T18:14:58.199986+05:30",
+        "temp": 36,
+        "ethanol": 8,
+        "wif": 4,
+        "turbidity": 0.98,
+        "density": 758.99
+    },
+    {
+        "timestamp": "2026-08-04T18:15:00.226085+05:30",
+        "temp": 37,
+        "ethanol": 12,
+        "wif": 42,
+        "turbidity": 32.99,
+        "density": 730.73
+    },
+    {
+        "timestamp": "2026-08-04T18:15:02.256296+05:30",
+        "temp": 41,
+        "ethanol": 3,
+        "wif": 2,
+        "turbidity": 2.98,
+        "density": 747.73
+    },
+    {
+        "timestamp": "2026-08-04T18:15:04.284085+05:30",
+        "temp": 37,
+        "ethanol": 10,
+        "wif": 1,
+        "turbidity": 4.98,
+        "density": 750.91
+    },
+    {
+        "timestamp": "2026-08-04T18:15:06.311268+05:30",
+        "temp": 38,
+        "ethanol": 17,
+        "wif": 57,
+        "turbidity": 48.99,
+        "density": 750.31
+    },
+    {
+        "timestamp": "2026-08-04T18:15:08.341867+05:30",
+        "temp": 36,
+        "ethanol": 6,
+        "wif": 6,
+        "turbidity": 0.98,
+        "density": 737.86
+    },
+    {
+        "timestamp": "2026-08-04T18:15:10.356829+05:30",
+        "temp": 24,
+        "ethanol": 9,
+        "wif": 47,
+        "turbidity": 30.99,
+        "density": 752.14
+    },
+    {
+        "timestamp": "2026-08-04T18:15:12.387414+05:30",
+        "temp": 37,
+        "ethanol": 9,
+        "wif": 90,
+        "turbidity": 63.98,
+        "density": 752.04
+    },
+    {
+        "timestamp": "2026-08-04T18:15:14.420190+05:30",
+        "temp": 39,
+        "ethanol": 20,
+        "wif": 77,
+        "turbidity": 44.98,
+        "density": 743.88
+    },
+    {
+        "timestamp": "2026-08-04T18:15:16.445578+05:30",
+        "temp": 32,
+        "ethanol": 7,
+        "wif": 1,
+        "turbidity": 7.99,
+        "density": 753.06
+    },
+    {
+        "timestamp": "2026-08-04T18:15:18.471087+05:30",
+        "temp": 28,
+        "ethanol": 20,
+        "wif": 37,
+        "turbidity": 63.98,
+        "density": 764.81
+    },
+    {
+        "timestamp": "2026-08-04T18:15:20.503573+05:30",
+        "temp": 33,
+        "ethanol": 18,
+        "wif": 73,
+        "turbidity": 28.99,
+        "density": 747.44
+    },
+    {
+        "timestamp": "2026-08-04T18:15:22.544814+05:30",
+        "temp": 24,
+        "ethanol": 1,
+        "wif": 5,
+        "turbidity": 0.98,
+        "density": 761.03
+    },
+    {
+        "timestamp": "2026-08-04T18:15:24.574620+05:30",
+        "temp": 32,
+        "ethanol": 17,
+        "wif": 66,
+        "turbidity": 37.0,
+        "density": 759.84
+    },
+    {
+        "timestamp": "2026-08-04T18:15:26.601753+05:30",
+        "temp": 41,
+        "ethanol": 18,
+        "wif": 65,
+        "turbidity": 25.98,
+        "density": 735.75
+    },
+    {
+        "timestamp": "2026-08-04T18:15:28.634582+05:30",
+        "temp": 25,
+        "ethanol": 11,
+        "wif": 1,
+        "turbidity": 0.0,
+        "density": 742.24
+    },
+    {
+        "timestamp": "2026-08-04T18:15:30.669007+05:30",
+        "temp": 25,
+        "ethanol": 9,
+        "wif": 4,
+        "turbidity": 0.0,
+        "density": 740.54
+    },
+    {
+        "timestamp": "2026-08-04T18:15:32.704854+05:30",
+        "temp": 41,
+        "ethanol": 9,
+        "wif": 4,
+        "turbidity": 3.98,
+        "density": 721.7
+    },
+    {
+        "timestamp": "2026-08-04T18:15:34.735820+05:30",
+        "temp": 36,
+        "ethanol": 9,
+        "wif": 2,
+        "turbidity": 3.98,
+        "density": 726.61
+    },
+    {
+        "timestamp": "2026-08-04T18:15:36.764907+05:30",
+        "temp": 37,
+        "ethanol": 21,
+        "wif": 3,
+        "turbidity": 0.0,
+        "density": 745.47
+    },
+    {
+        "timestamp": "2026-08-04T18:15:38.791865+05:30",
+        "temp": 26,
+        "ethanol": 19,
+        "wif": 4,
+        "turbidity": 0.98,
+        "density": 739.9
+    },
+    {
+        "timestamp": "2026-08-04T18:15:40.817867+05:30",
+        "temp": 35,
+        "ethanol": 10,
+        "wif": 2,
+        "turbidity": 2.98,
+        "density": 729.68
+    },
+    {
+        "timestamp": "2026-08-04T18:15:42.836524+05:30",
+        "temp": 38,
+        "ethanol": 11,
+        "wif": 2,
+        "turbidity": 3.98,
+        "density": 733.71
+    },
+    {
+        "timestamp": "2026-08-04T18:15:44.873519+05:30",
+        "temp": 34,
+        "ethanol": 10,
+        "wif": 2,
+        "turbidity": 4.98,
+        "density": 736.1
+    },
+    {
+        "timestamp": "2026-08-04T18:15:46.911792+05:30",
+        "temp": 30,
+        "ethanol": 20,
+        "wif": 3,
+        "turbidity": 4.98,
+        "density": 753.54
+    },
+    {
+        "timestamp": "2026-08-04T18:15:48.938614+05:30",
+        "temp": 28,
+        "ethanol": 18,
+        "wif": 2,
+        "turbidity": 0.98,
+        "density": 751.27
+    },
+    {
+        "timestamp": "2026-08-04T18:15:50.968044+05:30",
+        "temp": 26,
+        "ethanol": 9,
+        "wif": 0,
+        "turbidity": 4.98,
+        "density": 751.27
+    },
+    {
+        "timestamp": "2026-08-04T18:15:52.994475+05:30",
+        "temp": 39,
+        "ethanol": 19,
+        "wif": 3,
+        "turbidity": 3.98,
+        "density": 733.83
+    },
+    {
+        "timestamp": "2026-08-04T18:15:55.025163+05:30",
+        "temp": 34,
+        "ethanol": 19,
+        "wif": 4,
+        "turbidity": 2.98,
+        "density": 739.35
+    },
+    {
+        "timestamp": "2026-08-04T18:15:57.053265+05:30",
+        "temp": 34,
+        "ethanol": 20,
+        "wif": 1,
+        "turbidity": 4.98,
+        "density": 736.34
+    },
+    {
+        "timestamp": "2026-08-04T18:15:59.080896+05:30",
+        "temp": 34,
+        "ethanol": 21,
+        "wif": 2,
+        "turbidity": 3.98,
+        "density": 734.57
+    },
+    {
+        "timestamp": "2026-08-04T18:16:01.109964+05:30",
+        "temp": 29,
+        "ethanol": 21,
+        "wif": 4,
+        "turbidity": 1.98,
+        "density": 742.27
+    },
+    {
+        "timestamp": "2026-08-04T18:16:03.146151+05:30",
+        "temp": 34,
+        "ethanol": 22,
+        "wif": 2,
+        "turbidity": 0.98,
+        "density": 747.93
+    },
+    {
+        "timestamp": "2026-08-04T18:16:05.167086+05:30",
+        "temp": 31,
+        "ethanol": 10,
+        "wif": 1,
+        "turbidity": 5.98,
+        "density": 745.99
+    },
+    {
+        "timestamp": "2026-08-04T18:16:07.191764+05:30",
+        "temp": 41,
+        "ethanol": 18,
+        "wif": 4,
+        "turbidity": 5.98,
+        "density": 725.49
+    },
+    {
+        "timestamp": "2026-08-04T18:16:09.221836+05:30",
+        "temp": 31,
+        "ethanol": 9,
+        "wif": 1,
+        "turbidity": 0.0,
+        "density": 740.04
+    },
+    {
+        "timestamp": "2026-08-04T18:16:11.253300+05:30",
+        "temp": 27,
+        "ethanol": 20,
+        "wif": 1,
+        "turbidity": 3.98,
+        "density": 747.39
+    },
+    {
+        "timestamp": "2026-08-04T18:16:13.291639+05:30",
+        "temp": 38,
+        "ethanol": 11,
+        "wif": 0,
+        "turbidity": 0.98,
+        "density": 724.6
+    },
+    {
+        "timestamp": "2026-08-04T18:16:15.312532+05:30",
+        "temp": 35,
+        "ethanol": 18,
+        "wif": 3,
+        "turbidity": 4.98,
+        "density": 731.01
+    },
+    {
+        "timestamp": "2026-08-04T18:16:17.354771+05:30",
+        "temp": 37,
+        "ethanol": 21,
+        "wif": 1,
+        "turbidity": 3.98,
+        "density": 731.44
+    },
+    {
+        "timestamp": "2026-08-04T18:16:19.425506+05:30",
+        "temp": 37,
+        "ethanol": 19,
+        "wif": 2,
+        "turbidity": 1.98,
+        "density": 731.51
+    },
+    {
+        "timestamp": "2026-08-04T18:16:21.459453+05:30",
+        "temp": 24,
+        "ethanol": 21,
+        "wif": 1,
+        "turbidity": 3.98,
+        "density": 745.91
+    },
+    {
+        "timestamp": "2026-08-04T18:16:23.490808+05:30",
+        "temp": 26,
+        "ethanol": 18,
+        "wif": 1,
+        "turbidity": 2.98,
+        "density": 735.49
+    },
+    {
+        "timestamp": "2026-08-04T18:16:25.526848+05:30",
+        "temp": 40,
+        "ethanol": 9,
+        "wif": 1,
+        "turbidity": 4.98,
+        "density": 722.48
+    },
+    {
+        "timestamp": "2026-08-04T18:16:27.561335+05:30",
+        "temp": 29,
+        "ethanol": 9,
+        "wif": 1,
+        "turbidity": 2.98,
+        "density": 742.29
+    },
+    {
+        "timestamp": "2026-08-04T18:16:29.588690+05:30",
+        "temp": 32,
+        "ethanol": 15,
+        "wif": 17,
+        "turbidity": 10.99,
+        "density": 737.96
+    },
+    {
+        "timestamp": "2026-08-04T18:16:31.621354+05:30",
+        "temp": 28,
+        "ethanol": 14,
+        "wif": 13,
+        "turbidity": 8.99,
+        "density": 745.52
+    },
+    {
+        "timestamp": "2026-08-04T18:16:33.643474+05:30",
+        "temp": 28,
+        "ethanol": 14,
+        "wif": 19,
+        "turbidity": 6.98,
+        "density": 738.47
+    },
+    {
+        "timestamp": "2026-08-04T18:16:35.671370+05:30",
+        "temp": 28,
+        "ethanol": 14,
+        "wif": 12,
+        "turbidity": 13.99,
+        "density": 746.6
+    },
+    {
+        "timestamp": "2026-08-04T18:16:37.696047+05:30",
+        "temp": 36,
+        "ethanol": 20,
+        "wif": 14,
+        "turbidity": 7.99,
+        "density": 733.81
+    },
+    {
+        "timestamp": "2026-08-04T18:16:39.719687+05:30",
+        "temp": 40,
+        "ethanol": 13,
+        "wif": 11,
+        "turbidity": 7.99,
+        "density": 738.26
+    },
+    {
+        "timestamp": "2026-08-04T18:16:41.747039+05:30",
+        "temp": 32,
+        "ethanol": 21,
+        "wif": 13,
+        "turbidity": 10.99,
+        "density": 747.12
+    },
+    {
+        "timestamp": "2026-08-04T18:16:43.773075+05:30",
+        "temp": 26,
+        "ethanol": 21,
+        "wif": 9,
+        "turbidity": 7.99,
+        "density": 744.57
+    },
+    {
+        "timestamp": "2026-08-04T18:16:45.807514+05:30",
+        "temp": 34,
+        "ethanol": 18,
+        "wif": 18,
+        "turbidity": 12.99,
+        "density": 742.11
+    },
+    {
+        "timestamp": "2026-08-04T18:16:47.846003+05:30",
+        "temp": 31,
+        "ethanol": 14,
+        "wif": 17,
+        "turbidity": 13.99,
+        "density": 752.55
+    },
+    {
+        "timestamp": "2026-08-04T18:16:49.874558+05:30",
+        "temp": 39,
+        "ethanol": 12,
+        "wif": 10,
+        "turbidity": 5.98,
+        "density": 738.54
+    },
+    {
+        "timestamp": "2026-08-04T18:16:51.901386+05:30",
+        "temp": 38,
+        "ethanol": 20,
+        "wif": 12,
+        "turbidity": 10.99,
+        "density": 740.35
+    },
+    {
+        "timestamp": "2026-08-04T18:16:53.950568+05:30",
+        "temp": 41,
+        "ethanol": 18,
+        "wif": 14,
+        "turbidity": 9.99,
+        "density": 736.68
+    },
+    {
+        "timestamp": "2026-08-04T18:16:55.996183+05:30",
+        "temp": 29,
+        "ethanol": 19,
+        "wif": 9,
+        "turbidity": 9.99,
+        "density": 744.14
+    },
+    {
+        "timestamp": "2026-08-04T18:16:58.022378+05:30",
+        "temp": 27,
+        "ethanol": 19,
+        "wif": 14,
+        "turbidity": 6.98,
+        "density": 737.9
+    },
+    {
+        "timestamp": "2026-08-04T18:17:00.046842+05:30",
+        "temp": 40,
+        "ethanol": 18,
+        "wif": 13,
+        "turbidity": 13.99,
+        "density": 727.93
+    },
+    {
+        "timestamp": "2026-08-04T18:17:02.075083+05:30",
+        "temp": 26,
+        "ethanol": 10,
+        "wif": 14,
+        "turbidity": 5.98,
+        "density": 742.41
+    },
+    {
+        "timestamp": "2026-08-04T18:17:04.106532+05:30",
+        "temp": 26,
+        "ethanol": 15,
+        "wif": 19,
+        "turbidity": 11.99,
+        "density": 736.39
+    },
+    {
+        "timestamp": "2026-08-04T18:17:06.143223+05:30",
+        "temp": 41,
+        "ethanol": 20,
+        "wif": 14,
+        "turbidity": 5.98,
+        "density": 733.16
+    },
+    {
+        "timestamp": "2026-08-04T18:17:08.182664+05:30",
+        "temp": 28,
+        "ethanol": 20,
+        "wif": 17,
+        "turbidity": 8.99,
+        "density": 748.93
+    },
+    {
+        "timestamp": "2026-08-04T18:17:10.211718+05:30",
+        "temp": 33,
+        "ethanol": 16,
+        "wif": 14,
+        "turbidity": 11.99,
+        "density": 751.71
+    },
+    {
+        "timestamp": "2026-08-04T18:17:12.250473+05:30",
+        "temp": 27,
+        "ethanol": 12,
+        "wif": 10,
+        "turbidity": 12.99,
+        "density": 734.23
+    },
+    {
+        "timestamp": "2026-08-04T18:17:14.281690+05:30",
+        "temp": 39,
+        "ethanol": 20,
+        "wif": 9,
+        "turbidity": 11.99,
+        "density": 738.47
+    },
+    {
+        "timestamp": "2026-08-04T18:17:16.315270+05:30",
+        "temp": 32,
+        "ethanol": 15,
+        "wif": 18,
+        "turbidity": 5.98,
+        "density": 732.62
+    },
+    {
+        "timestamp": "2026-08-04T18:17:18.355839+05:30",
+        "temp": 30,
+        "ethanol": 17,
+        "wif": 17,
+        "turbidity": 11.99,
+        "density": 742.21
+    },
+    {
+        "timestamp": "2026-08-04T18:17:20.390113+05:30",
+        "temp": 38,
+        "ethanol": 13,
+        "wif": 13,
+        "turbidity": 4.98,
+        "density": 730.01
+    },
+    {
+        "timestamp": "2026-08-04T18:17:22.418879+05:30",
+        "temp": 39,
+        "ethanol": 19,
+        "wif": 17,
+        "turbidity": 8.99,
+        "density": 740.96
+    },
+    {
+        "timestamp": "2026-08-04T18:17:24.449928+05:30",
+        "temp": 35,
+        "ethanol": 11,
+        "wif": 17,
+        "turbidity": 5.98,
+        "density": 747.58
+    },
+    {
+        "timestamp": "2026-08-04T18:17:26.486193+05:30",
+        "temp": 41,
+        "ethanol": 13,
+        "wif": 12,
+        "turbidity": 5.98,
+        "density": 725.37
+    },
+    {
+        "timestamp": "2026-08-04T18:17:28.519318+05:30",
+        "temp": 29,
+        "ethanol": 22,
+        "wif": 10,
+        "turbidity": 6.98,
+        "density": 757.02
+    },
+    {
+        "timestamp": "2026-08-04T18:17:30.558879+05:30",
+        "temp": 41,
+        "ethanol": 19,
+        "wif": 42,
+        "turbidity": 34.99,
+        "density": 735.64
+    },
+    {
+        "timestamp": "2026-08-04T18:17:32.588799+05:30",
+        "temp": 38,
+        "ethanol": 10,
+        "wif": 0,
+        "turbidity": 0.0,
+        "density": 755.08
+    },
+    {
+        "timestamp": "2026-08-04T18:17:34.623151+05:30",
+        "temp": 27,
+        "ethanol": 9,
+        "wif": 2,
+        "turbidity": 0.98,
+        "density": 752.14
+    },
+    {
+        "timestamp": "2026-08-04T18:17:36.655796+05:30",
+        "temp": 41,
+        "ethanol": 10,
+        "wif": 1,
+        "turbidity": 6.98,
+        "density": 737.71
+    },
+    {
+        "timestamp": "2026-08-04T18:17:38.679401+05:30",
+        "temp": 32,
+        "ethanol": 1,
+        "wif": 6,
+        "turbidity": 5.98,
+        "density": 751.89
+    },
+    {
+        "timestamp": "2026-08-04T18:17:40.712072+05:30",
+        "temp": 38,
+        "ethanol": 22,
+        "wif": 48,
+        "turbidity": 59.0,
+        "density": 748.49
+    },
+    {
+        "timestamp": "2026-08-04T18:17:42.755783+05:30",
+        "temp": 42,
+        "ethanol": 8,
+        "wif": 5,
+        "turbidity": 1.98,
+        "density": 744.76
+    },
+    {
+        "timestamp": "2026-08-04T18:17:44.784814+05:30",
+        "temp": 32,
+        "ethanol": 19,
+        "wif": 86,
+        "turbidity": 61.98,
+        "density": 739.31
+    },
+    {
+        "timestamp": "2026-08-04T18:17:46.817448+05:30",
+        "temp": 38,
+        "ethanol": 18,
+        "wif": 78,
+        "turbidity": 41.98,
+        "density": 752.61
+    },
+    {
+        "timestamp": "2026-08-04T18:17:48.856478+05:30",
+        "temp": 24,
+        "ethanol": 14,
+        "wif": 79,
+        "turbidity": 38.0,
+        "density": 764.29
+    },
+    {
+        "timestamp": "2026-08-04T18:17:50.885628+05:30",
+        "temp": 30,
+        "ethanol": 19,
+        "wif": 55,
+        "turbidity": 30.99,
+        "density": 759.59
+    },
+    {
+        "timestamp": "2026-08-04T18:17:52.918142+05:30",
+        "temp": 36,
+        "ethanol": 13,
+        "wif": 64,
+        "turbidity": 24.98,
+        "density": 755.29
+    },
+    {
+        "timestamp": "2026-08-04T18:17:54.949922+05:30",
+        "temp": 40,
+        "ethanol": 4,
+        "wif": 4,
+        "turbidity": 7.99,
+        "density": 738.45
+    },
+    {
+        "timestamp": "2026-08-04T18:17:56.981540+05:30",
+        "temp": 25,
+        "ethanol": 17,
+        "wif": 51,
+        "turbidity": 53.99,
+        "density": 742.9
+    },
+    {
+        "timestamp": "2026-08-04T18:17:59.018151+05:30",
+        "temp": 34,
+        "ethanol": 15,
+        "wif": 57,
+        "turbidity": 24.98,
+        "density": 750.79
+    },
+    {
+        "timestamp": "2026-08-04T18:18:01.048931+05:30",
+        "temp": 36,
+        "ethanol": 18,
+        "wif": 87,
+        "turbidity": 54.99,
+        "density": 735.24
+    },
+    {
+        "timestamp": "2026-08-04T18:18:03.075744+05:30",
+        "temp": 39,
+        "ethanol": 21,
+        "wif": 54,
+        "turbidity": 49.99,
+        "density": 739.26
+    },
+    {
+        "timestamp": "2026-08-04T18:18:05.111209+05:30",
+        "temp": 35,
+        "ethanol": 6,
+        "wif": 5,
+        "turbidity": 0.0,
+        "density": 755.12
+    },
+    {
+        "timestamp": "2026-08-04T18:18:07.147026+05:30",
+        "temp": 28,
+        "ethanol": 14,
+        "wif": 46,
+        "turbidity": 29.99,
+        "density": 752.96
+    },
+    {
+        "timestamp": "2026-08-04T18:18:09.177008+05:30",
+        "temp": 26,
+        "ethanol": 11,
+        "wif": 39,
+        "turbidity": 24.98,
+        "density": 757.51
+    },
+    {
+        "timestamp": "2026-08-04T18:18:11.209604+05:30",
+        "temp": 26,
+        "ethanol": 10,
+        "wif": 40,
+        "turbidity": 47.99,
+        "density": 745.45
+    },
+    {
+        "timestamp": "2026-08-04T18:18:13.238003+05:30",
+        "temp": 25,
+        "ethanol": 12,
+        "wif": 2,
+        "turbidity": 6.98,
+        "density": 757.1
+    },
+    {
+        "timestamp": "2026-08-04T18:18:15.273138+05:30",
+        "temp": 36,
+        "ethanol": 20,
+        "wif": 45,
+        "turbidity": 39.0,
+        "density": 753.77
+    },
+    {
+        "timestamp": "2026-08-04T18:18:17.309400+05:30",
+        "temp": 32,
+        "ethanol": 4,
+        "wif": 1,
+        "turbidity": 0.0,
+        "density": 750.57
+    },
+    {
+        "timestamp": "2026-08-04T18:18:19.343282+05:30",
+        "temp": 27,
+        "ethanol": 4,
+        "wif": 3,
+        "turbidity": 6.98,
+        "density": 745.27
+    },
+    {
+        "timestamp": "2026-08-04T18:18:21.373262+05:30",
+        "temp": 24,
+        "ethanol": 17,
+        "wif": 39,
+        "turbidity": 64.98,
+        "density": 753.04
+    },
+    {
+        "timestamp": "2026-08-04T18:18:23.409837+05:30",
+        "temp": 30,
+        "ethanol": 8,
+        "wif": 41,
+        "turbidity": 50.99,
+        "density": 751.11
+    },
+    {
+        "timestamp": "2026-08-04T18:18:25.440011+05:30",
+        "temp": 33,
+        "ethanol": 1,
+        "wif": 1,
+        "turbidity": 3.98,
+        "density": 735.01
+    },
+    {
+        "timestamp": "2026-08-04T18:18:27.477764+05:30",
+        "temp": 38,
+        "ethanol": 13,
+        "wif": 68,
+        "turbidity": 47.99,
+        "density": 744.72
+    },
+    {
+        "timestamp": "2026-08-04T18:18:29.509937+05:30",
+        "temp": 31,
+        "ethanol": 19,
+        "wif": 67,
+        "turbidity": 57.0,
+        "density": 746.78
+    },
+    {
+        "timestamp": "2026-08-04T18:18:31.552110+05:30",
+        "temp": 33,
+        "ethanol": 10,
+        "wif": 2,
+        "turbidity": 2.98,
+        "density": 747.79
+    },
+    {
+        "timestamp": "2026-08-04T18:18:33.585910+05:30",
+        "temp": 32,
+        "ethanol": 20,
+        "wif": 2,
+        "turbidity": 2.98,
+        "density": 743.67
+    },
+    {
+        "timestamp": "2026-08-04T18:18:35.610941+05:30",
+        "temp": 31,
+        "ethanol": 10,
+        "wif": 4,
+        "turbidity": 3.98,
+        "density": 746.35
+    },
+    {
+        "timestamp": "2026-08-04T18:18:37.637739+05:30",
+        "temp": 27,
+        "ethanol": 11,
+        "wif": 3,
+        "turbidity": 0.98,
+        "density": 732.85
+    },
+    {
+        "timestamp": "2026-08-04T18:18:39.663378+05:30",
+        "temp": 38,
+        "ethanol": 10,
+        "wif": 1,
+        "turbidity": 0.98,
+        "density": 721.9
+    },
+    {
+        "timestamp": "2026-08-04T18:18:41.701171+05:30",
+        "temp": 37,
+        "ethanol": 20,
+        "wif": 1,
+        "turbidity": 5.98,
+        "density": 744.58
+    },
+    {
+        "timestamp": "2026-08-04T18:18:43.728769+05:30",
+        "temp": 32,
+        "ethanol": 10,
+        "wif": 2,
+        "turbidity": 0.0,
+        "density": 737.29
+    },
+    {
+        "timestamp": "2026-08-04T18:18:45.760369+05:30",
+        "temp": 26,
+        "ethanol": 19,
+        "wif": 2,
+        "turbidity": 4.98,
+        "density": 741.45
+    },
+    {
+        "timestamp": "2026-08-04T18:18:47.809462+05:30",
+        "temp": 42,
+        "ethanol": 19,
+        "wif": 3,
+        "turbidity": 2.98,
+        "density": 741.93
+    },
+    {
+        "timestamp": "2026-08-04T18:18:49.836376+05:30",
+        "temp": 41,
+        "ethanol": 21,
+        "wif": 2,
+        "turbidity": 2.98,
+        "density": 730.42
+    },
+    {
+        "timestamp": "2026-08-04T18:18:51.873298+05:30",
+        "temp": 33,
+        "ethanol": 20,
+        "wif": 2,
+        "turbidity": 1.98,
+        "density": 740.48
+    },
+    {
+        "timestamp": "2026-08-04T18:18:53.912693+05:30",
+        "temp": 28,
+        "ethanol": 18,
+        "wif": 3,
+        "turbidity": 4.98,
+        "density": 752.0
+    },
+    {
+        "timestamp": "2026-08-04T18:18:55.948570+05:30",
+        "temp": 37,
+        "ethanol": 10,
+        "wif": 2,
+        "turbidity": 2.98,
+        "density": 735.34
+    },
+    {
+        "timestamp": "2026-08-04T18:18:57.986986+05:30",
+        "temp": 28,
+        "ethanol": 19,
+        "wif": 3,
+        "turbidity": 3.98,
+        "density": 754.75
+    },
+    {
+        "timestamp": "2026-08-04T18:19:00.022683+05:30",
+        "temp": 25,
+        "ethanol": 21,
+        "wif": 2,
+        "turbidity": 3.98,
+        "density": 750.72
+    },
+    {
+        "timestamp": "2026-08-04T18:19:02.053473+05:30",
+        "temp": 38,
+        "ethanol": 21,
+        "wif": 3,
+        "turbidity": 1.98,
+        "density": 745.86
+    },
+    {
+        "timestamp": "2026-08-04T18:19:04.078129+05:30",
+        "temp": 24,
+        "ethanol": 10,
+        "wif": 3,
+        "turbidity": 1.98,
+        "density": 749.8
+    },
+    {
+        "timestamp": "2026-08-04T18:19:06.117753+05:30",
+        "temp": 26,
+        "ethanol": 19,
+        "wif": 1,
+        "turbidity": 1.98,
+        "density": 751.94
+    },
+    {
+        "timestamp": "2026-08-04T18:19:08.150647+05:30",
+        "temp": 34,
+        "ethanol": 10,
+        "wif": 1,
+        "turbidity": 2.98,
+        "density": 726.61
+    },
+    {
+        "timestamp": "2026-08-04T18:19:10.188191+05:30",
+        "temp": 29,
+        "ethanol": 19,
+        "wif": 4,
+        "turbidity": 0.98,
+        "density": 754.48
+    },
+    {
+        "timestamp": "2026-08-04T18:19:12.226274+05:30",
+        "temp": 25,
+        "ethanol": 21,
+        "wif": 2,
+        "turbidity": 4.98,
+        "density": 749.81
+    },
+    {
+        "timestamp": "2026-08-04T18:19:14.286690+05:30",
+        "temp": 41,
+        "ethanol": 11,
+        "wif": 1,
+        "turbidity": 3.98,
+        "density": 742.05
+    },
+    {
+        "timestamp": "2026-08-04T18:26:43.858792+05:30",
+        "temp": 26,
+        "ethanol": 10,
+        "wif": 2,
+        "turbidity": 1.98,
+        "density": 742.17
+    },
+    {
+        "timestamp": "2026-08-04T18:26:45.888964+05:30",
+        "temp": 28,
+        "ethanol": 18,
+        "wif": 1,
+        "turbidity": 3.98,
+        "density": 741.35
+    },
+    {
+        "timestamp": "2026-08-04T18:26:47.924408+05:30",
+        "temp": 26,
+        "ethanol": 19,
+        "wif": 4,
+        "turbidity": 0.0,
+        "density": 755.37
+    },
+    {
+        "timestamp": "2026-08-04T18:26:49.964427+05:30",
+        "temp": 41,
+        "ethanol": 10,
+        "wif": 4,
+        "turbidity": 0.0,
+        "density": 737.18
+    },
+    {
+        "timestamp": "2026-08-04T18:26:51.991818+05:30",
+        "temp": 37,
+        "ethanol": 22,
+        "wif": 3,
+        "turbidity": 2.98,
+        "density": 744.55
+    },
+    {
+        "timestamp": "2026-08-04T18:26:54.024969+05:30",
+        "temp": 27,
+        "ethanol": 10,
+        "wif": 3,
+        "turbidity": 4.98,
+        "density": 737.92
+    },
+    {
+        "timestamp": "2026-08-04T23:00:17.499089+05:30",
+        "temp": 32,
+        "ethanol": 11,
+        "wif": 0,
+        "turbidity": 0.0,
+        "density": 736.6
+    },
+    {
+        "timestamp": "2026-08-04T23:00:19.529357+05:30",
+        "temp": 33,
+        "ethanol": 20,
+        "wif": 2,
+        "turbidity": 0.37,
+        "density": 736.6
+    },
+    {
+        "timestamp": "2026-08-04T23:00:21.548605+05:30",
+        "temp": 42,
+        "ethanol": 11,
+        "wif": 2,
+        "turbidity": 0.0,
+        "density": 736.6
+    },
+    {
+        "timestamp": "2026-08-04T23:00:23.583252+05:30",
+        "temp": 32,
+        "ethanol": 11,
+        "wif": 3,
+        "turbidity": 0.28,
+        "density": 736.6
+    },
+    {
+        "timestamp": "2026-08-04T23:00:25.613610+05:30",
+        "temp": 30,
+        "ethanol": 18,
+        "wif": 0,
+        "turbidity": 0.55,
+        "density": 736.6
+    },
+    {
+        "timestamp": "2026-08-04T23:00:27.643158+05:30",
+        "temp": 36,
+        "ethanol": 9,
+        "wif": 0,
+        "turbidity": 0.46,
+        "density": 736.6
+    },
+    {
+        "timestamp": "2026-08-04T23:00:29.677064+05:30",
+        "temp": 40,
+        "ethanol": 20,
+        "wif": 0,
+        "turbidity": 0.37,
+        "density": 736.6
+    },
+    {
+        "timestamp": "2026-08-04T23:00:31.710271+05:30",
+        "temp": 33,
+        "ethanol": 19,
+        "wif": 1,
+        "turbidity": 0.46,
+        "density": 736.6
+    },
+    {
+        "timestamp": "2026-08-04T23:00:33.750524+05:30",
+        "temp": 31,
+        "ethanol": 18,
+        "wif": 3,
+        "turbidity": 0.46,
+        "density": 736.6
+    },
+    {
+        "timestamp": "2026-08-04T23:00:35.784323+05:30",
+        "temp": 38,
+        "ethanol": 22,
+        "wif": 4,
+        "turbidity": 0.55,
+        "density": 736.6
+    },
+    {
+        "timestamp": "2026-08-04T23:00:37.813413+05:30",
+        "temp": 24,
+        "ethanol": 11,
+        "wif": 4,
+        "turbidity": 0.28,
+        "density": 736.6
+    },
+    {
+        "timestamp": "2026-08-04T23:00:39.842086+05:30",
+        "temp": 38,
+        "ethanol": 18,
+        "wif": 0,
+        "turbidity": 0.18,
+        "density": 736.6
+    },
+    {
+        "timestamp": "2026-08-04T23:00:41.874326+05:30",
+        "temp": 26,
+        "ethanol": 10,
+        "wif": 0,
+        "turbidity": 0.18,
+        "density": 736.6
+    },
+    {
+        "timestamp": "2026-08-04T23:00:43.909760+05:30",
+        "temp": 41,
+        "ethanol": 9,
+        "wif": 3,
+        "turbidity": 0.37,
+        "density": 736.6
+    },
+    {
+        "timestamp": "2026-08-04T23:00:45.938746+05:30",
+        "temp": 38,
+        "ethanol": 5,
+        "wif": 1,
+        "turbidity": 0.74,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:00:47.967554+05:30",
+        "temp": 35,
+        "ethanol": 3,
+        "wif": 2,
+        "turbidity": 0.83,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:00:49.997004+05:30",
+        "temp": 27,
+        "ethanol": 5,
+        "wif": 5,
+        "turbidity": 0.37,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:00:52.025895+05:30",
+        "temp": 34,
+        "ethanol": 10,
+        "wif": 2,
+        "turbidity": 0.55,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:00:54.051826+05:30",
+        "temp": 42,
+        "ethanol": 10,
+        "wif": 6,
+        "turbidity": 0.18,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:00:56.075751+05:30",
+        "temp": 42,
+        "ethanol": 18,
+        "wif": 77,
+        "turbidity": 3.14,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:00:58.106608+05:30",
+        "temp": 39,
+        "ethanol": 16,
+        "wif": 83,
+        "turbidity": 5.54,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:00.138970+05:30",
+        "temp": 41,
+        "ethanol": 5,
+        "wif": 0,
+        "turbidity": 0.74,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:02.171502+05:30",
+        "temp": 25,
+        "ethanol": 17,
+        "wif": 39,
+        "turbidity": 3.14,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:04.198437+05:30",
+        "temp": 33,
+        "ethanol": 8,
+        "wif": 39,
+        "turbidity": 3.32,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:06.229482+05:30",
+        "temp": 41,
+        "ethanol": 13,
+        "wif": 78,
+        "turbidity": 3.05,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:08.251194+05:30",
+        "temp": 28,
+        "ethanol": 2,
+        "wif": 3,
+        "turbidity": 0.18,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:10.279580+05:30",
+        "temp": 41,
+        "ethanol": 11,
+        "wif": 3,
+        "turbidity": 0.37,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:12.305008+05:30",
+        "temp": 27,
+        "ethanol": 10,
+        "wif": 71,
+        "turbidity": 3.05,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:14.340329+05:30",
+        "temp": 28,
+        "ethanol": 2,
+        "wif": 4,
+        "turbidity": 0.37,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:16.372060+05:30",
+        "temp": 32,
+        "ethanol": 20,
+        "wif": 53,
+        "turbidity": 4.15,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:18.401128+05:30",
+        "temp": 41,
+        "ethanol": 11,
+        "wif": 59,
+        "turbidity": 3.05,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:20.433299+05:30",
+        "temp": 36,
+        "ethanol": 10,
+        "wif": 39,
+        "turbidity": 3.51,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:22.454366+05:30",
+        "temp": 28,
+        "ethanol": 16,
+        "wif": 43,
+        "turbidity": 3.69,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:24.483889+05:30",
+        "temp": 30,
+        "ethanol": 3,
+        "wif": 4,
+        "turbidity": 0.55,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:26.514264+05:30",
+        "temp": 38,
+        "ethanol": 6,
+        "wif": 5,
+        "turbidity": 0.09,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:28.546251+05:30",
+        "temp": 41,
+        "ethanol": 1,
+        "wif": 2,
+        "turbidity": 0.74,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:30.582319+05:30",
+        "temp": 26,
+        "ethanol": 9,
+        "wif": 1,
+        "turbidity": 0.09,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:32.611240+05:30",
+        "temp": 29,
+        "ethanol": 11,
+        "wif": 1,
+        "turbidity": 0.55,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:34.645861+05:30",
+        "temp": 27,
+        "ethanol": 4,
+        "wif": 5,
+        "turbidity": 0.37,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:36.671266+05:30",
+        "temp": 36,
+        "ethanol": 19,
+        "wif": 83,
+        "turbidity": 2.49,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:38.692510+05:30",
+        "temp": 25,
+        "ethanol": 20,
+        "wif": 55,
+        "turbidity": 3.42,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:40.718663+05:30",
+        "temp": 25,
+        "ethanol": 21,
+        "wif": 89,
+        "turbidity": 5.08,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:42.753158+05:30",
+        "temp": 36,
+        "ethanol": 1,
+        "wif": 5,
+        "turbidity": 0.65,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:44.792687+05:30",
+        "temp": 34,
+        "ethanol": 16,
+        "wif": 40,
+        "turbidity": 2.49,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:46.831698+05:30",
+        "temp": 25,
+        "ethanol": 2,
+        "wif": 5,
+        "turbidity": 0.55,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:48.864962+05:30",
+        "temp": 36,
+        "ethanol": 11,
+        "wif": 59,
+        "turbidity": 4.25,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:50.900391+05:30",
+        "temp": 41,
+        "ethanol": 9,
+        "wif": 5,
+        "turbidity": 0.09,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:52.932027+05:30",
+        "temp": 27,
+        "ethanol": 6,
+        "wif": 2,
+        "turbidity": 0.18,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:54.959220+05:30",
+        "temp": 36,
+        "ethanol": 10,
+        "wif": 50,
+        "turbidity": 5.72,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:56.987221+05:30",
+        "temp": 37,
+        "ethanol": 18,
+        "wif": 70,
+        "turbidity": 3.23,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:01:59.022263+05:30",
+        "temp": 41,
+        "ethanol": 11,
+        "wif": 86,
+        "turbidity": 2.68,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:02:01.048212+05:30",
+        "temp": 29,
+        "ethanol": 11,
+        "wif": 1,
+        "turbidity": 0.28,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:02:03.078314+05:30",
+        "temp": 37,
+        "ethanol": 21,
+        "wif": 36,
+        "turbidity": 4.15,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:02:05.114101+05:30",
+        "temp": 30,
+        "ethanol": 11,
+        "wif": 76,
+        "turbidity": 12.04,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:02:07.147461+05:30",
+        "temp": 29,
+        "ethanol": 19,
+        "wif": 88,
+        "turbidity": 3.6,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:02:09.179863+05:30",
+        "temp": 31,
+        "ethanol": 18,
+        "wif": 83,
+        "turbidity": 4.43,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:02:11.207860+05:30",
+        "temp": 27,
+        "ethanol": 8,
+        "wif": 3,
+        "turbidity": 0.83,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:02:13.248068+05:30",
+        "temp": 25,
+        "ethanol": 12,
+        "wif": 71,
+        "turbidity": 3.32,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:02:15.269513+05:30",
+        "temp": 26,
+        "ethanol": 8,
+        "wif": 1,
+        "turbidity": 0.55,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:02:17.306894+05:30",
+        "temp": 26,
+        "ethanol": 13,
+        "wif": 86,
+        "turbidity": 5.26,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:02:19.341472+05:30",
+        "temp": 27,
+        "ethanol": 15,
+        "wif": 62,
+        "turbidity": 2.77,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:02:21.373333+05:30",
+        "temp": 29,
+        "ethanol": 8,
+        "wif": 1,
+        "turbidity": 0.74,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:02:23.411947+05:30",
+        "temp": 29,
+        "ethanol": 2,
+        "wif": 4,
+        "turbidity": 0.46,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:02:25.443935+05:30",
+        "temp": 38,
+        "ethanol": 1,
+        "wif": 5,
+        "turbidity": 0.28,
+        "density": 759.36
+    },
+    {
+        "timestamp": "2026-08-04T23:02:27.469473+05:30",
+        "temp": 41,
+        "ethanol": 11,
+        "wif": 75,
+        "turbidity": 4.8,
+        "density": 759.36
     }
 ]

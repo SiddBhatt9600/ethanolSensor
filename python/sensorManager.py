@@ -11,8 +11,12 @@ MAX_SENSOR_RECORDS = 1000
 
 CONTINUOUS_INTERVAL = 10      # seconds
 CAPTURE_INTERVAL = 0.1        # 100 ms
-CAPTURE_SAMPLE_COUNT = 5
+CAPTURE_SAMPLE_COUNT = 10
 
+TURBIDITY_ADC_MAX = 4095.0
+
+TURBIDITY_BOARD_CLEAN = 70.0
+TURBIDITY_BOARD_DIRTY = 30.0
 
 class SensorManager:
 
@@ -36,6 +40,18 @@ class SensorManager:
         self.next_continuous = time.time()
         self.next_capture = 0
 
+        # Density is user-entered (phone app / web dashboard), not
+        # read from the board — there is no density sensor on the
+        # MCU. Whatever the user last submitted applies to every
+        # reading (continuous + button capture) until they update
+        # it again, same mental model as "measure once with a
+        # hydrometer, use it for this tank of fuel". Kept in memory
+        # only (not persisted to disk) — a process restart clears it
+        # and the dashboard goes back to "enter density" until it's
+        # resubmitted.
+        self.user_density = None
+        self.user_density_timestamp = None
+
     # Utility Functions
     def _timestamp(self):
         return datetime.now(
@@ -44,8 +60,9 @@ class SensorManager:
 
     # JSON Helpers
     def clear_button_json(self):
+
         with open("sensor_history_button.json", "w") as fp:
-            json.dump([], fp, indent=4)
+            json.dump({"samples": [], "average": {}}, fp, indent=4)
 
     ###########################################################
 
@@ -93,6 +110,9 @@ class SensorManager:
                 "turbidity":
                 self.average("turbidity"),
 
+                "turbidity_raw":
+                self.average("turbidity_raw"),
+
                 "density":
                 self.average("density")
             }
@@ -118,9 +138,149 @@ class SensorManager:
                 return None
         return value
 
+    # Physically-possible ranges for the board-read sensors. A
+    # reading outside these bounds (or missing/NaN, already turned
+    # into None by sanitize()) is rejected before it ever reaches
+    # history or the AI. This is the main guard against garbage from
+    # a disconnected sensor or a probe held in air instead of fuel:
+    # values that float outside a sane liquid-fuel envelope get
+    # dropped here instead of crashing feature extraction downstream
+    # (float(None) raises) or feeding the model an input it was
+    # never trained on.
+    #
+    # Density is deliberately NOT in this dict: it is user-entered
+    # (no board sensor exists for it), so it must not gate whether
+    # the other four live sensor readings get stored/displayed. A
+    # reading with no density yet is still a real, valid sensor
+    # reading — it just can't be scored by the AI until density is
+    # supplied (see AiManager). Gating everything on density used to
+    # mean that after any restart (density resets to unset) every
+    # continuous reading was rejected outright, freezing the whole
+    # dashboard on stale cached data.
+    CORE_PLAUSIBLE_RANGE = {
+        "temp": (-20.0, 150.0),
+        "ethanol": (0.0, 100.0),
+        "wif": (0.0, 100.0),
+        "turbidity": (0.0, 100.0),
+    }
+
+    # Sanity band for a *user-entered* density value — independent of
+    # the tighter 725-775 kg/m3 "standard fuel" band used for the
+    # actual adulteration judgement (see fuelQualityModel.
+    # STANDARD_DENSITY_BAND). This one only exists to catch obvious
+    # fat-finger/garbage entries (e.g. a unit mixup); it does not
+    # reject the rest of the reading, only the density field itself.
+    DENSITY_SANITY_RANGE = (500.0, 1000.0)
+
+    def set_user_density(self, value):
+        """Called from the REST endpoint the phone app / web
+        dashboard posts a manually-measured density to. No board
+        density sensor exists — this is the only source of density.
+        Kept in memory only, not persisted to disk, so a process
+        restart clears it (see the note on self.user_density above).
+
+        Rejects obviously-implausible values (unit mixups, typos)
+        right here with a clear error, instead of silently storing
+        them and having readSensors()/sanitize_density() discard them
+        later — that used to make the dashboard show "density in use"
+        for a value that was actually never reaching the AI."""
+
+        try:
+            density = round(float(value), 2)
+        except (TypeError, ValueError):
+            return {"error": f"'{value}' is not a numeric density value"}
+
+        lo, hi = self.DENSITY_SANITY_RANGE
+        if math.isnan(density) or math.isinf(density) or not (lo <= density <= hi):
+            return {
+                "error": (
+                    f"{value} kg/m3 is outside the plausible liquid-fuel "
+                    f"density range ({lo:.0f}-{hi:.0f} kg/m3). Check the "
+                    f"value and try again"
+                )
+            }
+
+        with self._lock:
+            self.user_density = density
+            self.user_density_timestamp = self._timestamp()
+
+        self.logger.info(
+            f"User-supplied density set to {self.user_density} kg/m3"
+        )
+
+        return {
+            "density": self.user_density,
+            "timestamp": self.user_density_timestamp,
+        }
+
+    def get_user_density(self):
+        with self._lock:
+            return {
+                "density": self.user_density,
+                "timestamp": self.user_density_timestamp,
+            }
+
+    def is_core_plausible(self, reading):
+        """Gates whole-reading acceptance on the four board-read
+        sensors only. Density is checked separately (sanitize_density)
+        and never causes the rest of the reading to be dropped."""
+        for key, (lo, hi) in self.CORE_PLAUSIBLE_RANGE.items():
+            value = reading.get(key)
+            if not isinstance(value, (int, float)):
+                return False
+            if not (lo <= value <= hi):
+                return False
+        return True
+
+    def sanitize_density(self, value):
+        """A missing, NaN, or out-of-sane-range density becomes None
+        (AI verdict simply waits for a real one) instead of dropping
+        the temp/ethanol/wif/turbidity readings that came in fine."""
+        if value is None:
+            return None
+        if not isinstance(value, (int, float)):
+            return None
+        if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+            return None
+        lo, hi = self.DENSITY_SANITY_RANGE
+        if not (lo <= value <= hi):
+            return None
+        return value
+
+    def scale_turbidity(self, raw):
+        """Raw 12-bit ADC counts (0-4095) -> plain 0-100 index.
+        No direction/meaning assumed yet — see calibrate_turbidity()
+        for the field-calibrated remap onto the model's convention.
+
+        NOT currently called from readSensors(): the MCU's
+        getturbidity() already does this ADC->0-100 scaling itself
+        (readTurbidityPercent() in sketch.ino), so the bridge value
+        readSensors() receives is already a plain 0-100 index. Kept
+        here in case the MCU ever goes back to exposing a raw ADC
+        RPC (e.g. readTurbidityRaw)."""
+
+        if raw is None:
+            return None
+
+        pct = (float(raw) / TURBIDITY_ADC_MAX) * 100.0
+
+        return round(max(0.0, min(100.0, pct)), 2)
+
+    def calibrate_turbidity(self, raw_pct):
+
+        if raw_pct is None:
+            return None
+
+        span = TURBIDITY_BOARD_CLEAN - TURBIDITY_BOARD_DIRTY
+        if abs(span) < 1e-6:
+            return None
+
+        frac = (TURBIDITY_BOARD_CLEAN - float(raw_pct)) / span
+        return round(max(0.0, min(100.0, frac * 100.0)), 2)
+
     def readSensors(self):
         try:
-            return {
+            reading = {
                 "timestamp": self._timestamp(),
                 "temp":
                 self.sanitize(
@@ -143,65 +303,57 @@ class SensorManager:
                         2
                     )
                 ),
-                "turbidity":
-                self.sanitize(
-                    round(
-                        self.bridge.call("getturbidity"),
-                        2
-                    )
-                ),
-                "density":
-                self.sanitize(
-                    round(
-                        self.bridge.call("getdensity"),
-                        2
-                    )
-                )
+
+                "density": self.user_density
             }
+
+            turbidity_raw = self.sanitize(
+                round(float(self.bridge.call("getturbidity")), 2)
+            )
+
+            reading["turbidity_raw"] = turbidity_raw
+            reading["turbidity"] = self.sanitize(
+                self.calibrate_turbidity(turbidity_raw)
+            )
+
+            if not self.is_core_plausible(reading):
+                self.logger.warning(
+                    f"Rejected implausible sensor reading "
+                    f"(probe in air / disconnected?): {reading}"
+                )
+                return None
+
+            sanitized_density = self.sanitize_density(reading["density"])
+            if reading["density"] is not None and sanitized_density is None:
+                self.logger.warning(
+                    f"Discarding implausible user-entered density "
+                    f"{reading['density']} (outside "
+                    f"{self.DENSITY_SANITY_RANGE} kg/m3 sanity band); "
+                    f"other sensor values still recorded"
+                )
+            reading["density"] = sanitized_density
+
+            return reading
 
         except Exception as e:
             self.logger.exception(e)
             return None
-        
-    # Continuous Logger
+    def _record_history(self, reading):
+        with self._lock:
+            self.history_cache.append(reading)
+
+            self.history_cache = self.history_cache[
+                -MAX_SENSOR_RECORDS:
+            ]
+
+            self.save_history()
+
     def log_continuous(self):
         reading = self.readSensors()
         if reading is None:
             return
 
-        ##################################################
-        # Continuous History
-        ##################################################
-
-        self.history_cache.append(reading)
-
-        self.history_cache = self.history_cache[
-            -MAX_SENSOR_RECORDS:
-        ]
-
-        self.save_history()
-
-        ##################################################
-        # Button Capture
-        ##################################################
-
-        with self._lock:
-
-            if self.capture_pending:
-                self.capture_samples.append(reading)
-                self.logger.info(
-                    f"Capture Sample "
-                    f"{len(self.capture_samples)}/"
-                    f"{CAPTURE_SAMPLE_COUNT}"
-                )
-
-                if (len(self.capture_samples) >= CAPTURE_SAMPLE_COUNT):
-                    self.save_capture()
-                    self.capture_pending = False
-                    self.capture_samples = []
-                    self.logger.info(
-                        "Capture Completed."
-                    )
+        self._record_history(reading)
 
         self.logger.info(
             f"Continuous Reading : {reading}"
@@ -218,8 +370,8 @@ class SensorManager:
                 return False
 
             self.logger.info(
-                "Button pressed. Waiting for next "
-                f"{CAPTURE_SAMPLE_COUNT} continuous readings."
+                f"Button pressed. Capturing {CAPTURE_SAMPLE_COUNT} "
+                f"fresh readings now."
             )
 
             self.clear_button_json()
@@ -227,7 +379,48 @@ class SensorManager:
 
             self.capture_pending = True
 
-            return True
+        threading.Thread(
+            target=self._run_capture,
+            daemon=True,
+            name="SensorManager-Capture"
+        ).start()
+
+        return True
+
+    def _run_capture(self):
+        samples = []
+        attempts = 0
+        max_attempts = CAPTURE_SAMPLE_COUNT * 10
+
+        while len(samples) < CAPTURE_SAMPLE_COUNT and attempts < max_attempts:
+            attempts += 1
+
+            reading = self.readSensors()
+
+            if reading is not None:
+                samples.append(reading)
+                self._record_history(reading)
+
+                self.logger.info(
+                    f"Capture Sample {len(samples)}/{CAPTURE_SAMPLE_COUNT}"
+                )
+
+            time.sleep(CAPTURE_INTERVAL)
+
+        with self._lock:
+            self.capture_samples = samples
+            self.capture_pending = False
+
+        if len(samples) < CAPTURE_SAMPLE_COUNT:
+            self.logger.warning(
+                f"Capture finished with only {len(samples)}/"
+                f"{CAPTURE_SAMPLE_COUNT} valid readings after "
+                f"{attempts} attempts (probe in air / disconnected?)."
+            )
+
+        self.save_capture()
+
+        self.logger.info("Capture Completed.")
 
     ###########################################################
     #
@@ -309,22 +502,23 @@ class SensorManager:
         return self.history_cache[-count:]
 
     def get_latest_capture(self):
+        empty = {"samples": [], "average": {}}
+
         if not os.path.exists(
             "sensor_history_button.json"
         ):
-            return {
-                "samples": [],
-                "average": {}
-            }
+            return empty
         try:
             with open(
                 "sensor_history_button.json",
                 "r"
             ) as fp:
-                return json.load(fp)
+                data = json.load(fp)
+
+            if not isinstance(data, dict):
+                return empty
+
+            return data
 
         except Exception:
-            return {
-                "samples": [],
-                "average": {}
-            }
+            return empty

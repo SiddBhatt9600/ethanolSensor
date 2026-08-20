@@ -69,6 +69,8 @@ The project demonstrates a production-style architecture where the MCU performs 
                     | HbManager                          |
                     | SensorManager                      |
                     | ImuManager                         |
+                    | AiManager (fuel quality MLP +      |
+                    |            drift detection)        |
                     | WebUI                              |
                     | JSON Logger                        |
                     +-----------------+------------------+
@@ -101,6 +103,8 @@ main.py
 
 ├── ImuManager
 
+├── AiManager
+
 ├── WebUI
 
 └── Arduino Bridge
@@ -115,19 +119,31 @@ Each manager is responsible for its own acquisition, buffering, logging and REST
 ```
 .
 ├── python
-│   ├── main.py
-│   ├── hbManager.py
-│   ├── sensorManager.py
-│   └── imuManager.py
+│   ├── main.py              app entry: managers + REST APIs
+│   ├── hbManager.py         heartbeat monitor
+│   ├── sensorManager.py     sensor polling + button capture
+│   ├── imuManager.py        BMI323 IMU buffering + streaming
+│   ├── aiManager.py         AI worker thread + drift detection
+│   ├── fuelQualityModel.py  numpy MLP inference + explanations
+│   ├── features.py          shared feature engineering (train==serve)
+│   ├── model_weights.json   trained model (6-16-16-3, 435 params)
+│   ├── fuel_simulator.py    physics data generator (training)
+│   ├── train_model.py       training + JSON export (dev machine)
+│   ├── metrics.txt          accuracy + confusion matrix
+│   ├── test_ai.py           AI test suite (numpy only)
+│   └── local_demo.py        full-stack demo without the board
 │
 ├── assets
-│   ├── index.html
+│   ├── index.html           web dashboard
 │   ├── app.js
 │   └── style.css
 │
 ├── sketch
 │   ├── sketch.ino
 │   └── sketch.yaml
+│
+├── AI_PLAN.md               AI layer plan & status
+├── INTEGRATION.md           AI integration notes
 │
 ├── sensor_history.json
 ├── sensor_history_button.json
@@ -201,6 +217,32 @@ imu_history.json
 
 ---
 
+## AiManager (AI Layer)
+
+Responsibilities
+
+- Scores every continuous reading with a 435-parameter MLP
+  (GOOD / SUSPECT / ADULTERATED) in <1 ms, numpy only
+- Physics feature: density temperature-corrected to 15 °C compared
+  against the density expected for the measured ethanol % — the
+  residual exposes kerosene/solvent dilution
+- Refuel-drift anomaly detection (rolling z-score, 30-reading window)
+- Plain-language explanations for the dashboard / app UI
+- On-demand scoring of button captures
+
+Output
+
+```
+ai_history.json
+```
+
+Model: trained on a physics-grounded simulator
+(`fuel_simulator.py`), 94.2% test accuracy (`metrics.txt`).
+Retraining on real calibration data takes seconds:
+`python3 train_model.py` regenerates `model_weights.json`.
+
+---
+
 # Bridge RPC APIs
 
 ## MCU → Linux
@@ -235,6 +277,9 @@ imu_history.json
 | /api/imu_history | Last 30 minutes of IMU data |
 | /api/imu_statistics | IMU statistics |
 | /api/heartbeat | Heartbeat status |
+| /api/ai/current | Latest AI verdict (status card) |
+| /api/ai/verdicts | Last 10 AI verdicts |
+| /api/ai/capture_verdict | AI score of the latest button capture |
 
 ---
 
@@ -242,6 +287,10 @@ imu_history.json
 
 The dashboard is served directly from the Arduino UNO Q and includes:
 
+- AI fuel quality verdict card with confidence and explanations
+- AI verdict history with density-physics breakdown
+- Drift / refuel anomaly alerts
+- AI spot check of button captures
 - Live connection status
 - Heartbeat monitor
 - Fuel quality cards
@@ -266,6 +315,9 @@ The dashboard is responsive and can be accessed from desktop and mobile devices 
 - Fuel sensor acquisition
 - BMI323 integration
 - Circular IMU buffer
+- AI fuel quality classification (94.2% test accuracy)
+- Refuel-drift anomaly detection
+- Offline AI test suite + board-free full-stack demo
 - JSON persistence
 - Web Dashboard
 - Chart.js visualization
@@ -276,12 +328,31 @@ The dashboard is responsive and can be accessed from desktop and mobile devices 
 
 ---
 
+# Testing
+
+Offline AI test suite (needs only numpy):
+
+```
+cd python
+python3 test_ai.py
+```
+
+Full-stack demo without the UNO Q (real SensorManager + AiManager
+against a mock bridge, real dashboard at http://localhost:8000):
+
+```
+cd python
+python3 local_demo.py
+```
+
+---
+
 # Planned Features
 
 - MQTT publishing
 - BLE companion application
 - OTA firmware updates
-- Fuel quality anomaly detection
+- Driver behavior scoring from IMU
 - Crash detection
 - Vehicle tilt detection
 - Harsh braking detection

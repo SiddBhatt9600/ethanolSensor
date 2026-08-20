@@ -20,11 +20,35 @@ body {
 
 }
 
+h3 {
+
+    margin-bottom: 10px;
+
+}
+
 /* ==========================================================
    Header
    ========================================================== */
 
 header {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    background: #1f2937;
+
+    padding: 12px 20px;
+
+    border-radius: 10px;
+
+    border: 1px solid #374151;
 
     margin-bottom: 25px;
 
@@ -32,33 +56,33 @@ header {
 
 header h1 {
 
-    text-align: center;
-
     color: #ffffff;
 
-    margin-bottom: 15px;
+    font-size: 1.4em;
+
+    text-align: center;
+
+    flex: 1;
 
 }
 
-#connectionBar {
+.headerSide {
 
     display: flex;
 
-    justify-content: space-between;
-
     align-items: center;
 
-    background: #1f2937;
+    gap: 12px;
 
-    padding: 15px;
+    font-size: 0.85em;
 
-    border-radius: 10px;
+    white-space: nowrap;
 
-    border: 1px solid #374151;
+}
 
-    flex-wrap: wrap;
+.headerSideRight {
 
-    gap: 10px;
+    justify-content: flex-end;
 
 }
 
@@ -89,7 +113,7 @@ header h1 {
 
     gap: 20px;
 
-    margin-bottom: 30px;
+    margin-bottom: 25px;
 
 }
 
@@ -171,18 +195,6 @@ canvas {
    Tables
    ========================================================== */
 
-.tableWrapper {
-
-    display: grid;
-
-    grid-template-columns: 1fr 1fr;
-
-    gap: 25px;
-
-    margin-bottom: 25px;
-
-}
-
 .tablePanel {
 
     background: #1f2937;
@@ -192,6 +204,8 @@ canvas {
     border: 1px solid #374151;
 
     padding: 20px;
+
+    margin-bottom: 25px;
 
 }
 
@@ -270,64 +284,263 @@ tbody tr:hover {
 
 }
 
-#average {
+.captureMeta {
 
-    margin-top: 20px;
+    color: #9ca3af;
+
+    font-size: 0.85em;
+
+    margin-bottom: 10px;
+
+}
+
+.captureMeta:empty {
+
+    margin-bottom: 0;
+
+}
+
+/* Dims the capture details in place while a fresh reading is being
+   taken, instead of hiding them, keeps the last known numbers
+   visible so the panel never looks empty or frozen. */
+.pending {
+
+    opacity: 0.45;
+
+    transition: opacity 0.25s ease;
+
+}
+
+/* Setup controls (Step 1 / Step 2) don't need as much breathing room
+   as the result cards, so they can sit compactly side by side with
+   the verdict instead of pushing it down the page. */
+.compactSection {
 
     padding: 15px;
-
-    background: #111827;
-
-    border-left: 5px solid #38bdf8;
-
-    border-radius: 8px;
-
-    line-height: 1.8;
-
-}
-
-/* ==========================================================
-   Event Log
-   ========================================================== */
-
-.eventSection {
-
-    background: #1f2937;
-
-    border-radius: 12px;
-
-    border: 1px solid #374151;
-
-    padding: 20px;
-
-}
-
-.eventSection h2 {
 
     margin-bottom: 15px;
 
 }
 
-#eventLog {
+.compactSection h2 {
 
+    margin-bottom: 10px;
+
+    font-size: 1.1em;
+
+}
+
+/* The 10-sample readings table is collapsed by default (the average
+   already shown as one line above it, and again as the cards further
+   down the page, covers what most people need). */
+#captureDetails summary {
+
+    cursor: pointer;
+
+    color: #7dd3fc;
+
+    font-size: 0.9em;
+
+    margin-top: 5px;
+
+}
+
+#captureDetails table {
+
+    margin-top: 12px;
+
+}
+
+/* Density entry and the reading button sit in one column so they
+   read as "do this first, then this" without pushing the actual
+   result down the page; the verdict sits beside them instead of
+   below, so both are visible together on a normal screen. Both
+   columns stretch to match whichever one is taller (align-items:
+   stretch is the grid default), and each column is a flex stack so
+   its last panel grows to fill the extra space, keeping the two
+   sides' bottom edges level instead of one trailing off shorter. */
+.setupAndResultGrid {
+
+    display: grid;
+
+    grid-template-columns: 1fr 1.3fr;
+
+    gap: 25px;
+
+    margin-bottom: 25px;
+
+}
+
+.setupColumn,
+.resultColumn {
+
+    display: flex;
+
+    flex-direction: column;
+
+}
+
+.setupColumn > section:last-child,
+.resultColumn > section {
+
+    flex: 1;
+
+}
+
+/* ==========================================================
+   AI Verdict Section
+   ========================================================== */
+
+.aiSection {
+
+    background: #1f2937;
+
+    border: 1px solid #374151;
+
+    border-radius: 12px;
+
+    padding: 20px;
+
+    margin-bottom: 25px;
+
+}
+
+.aiSection h2 {
+
+    margin-bottom: 15px;
+
+}
+
+#aiCard {
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+#aiVerdict {
+    font-size: 34px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+#aiConfidence {
+    font-size: 16px;
+    margin-bottom: 6px;
+}
+
+#aiProbs {
+    font-size: 13px;
+    opacity: 0.85;
+}
+
+#aiBlend {
+    font-size: 14px;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+#mileageCard {
     background: #111827;
-
-    border-radius: 8px;
-
     padding: 15px;
-
-    min-height: 180px;
-
-    max-height: 220px;
-
-    overflow-y: auto;
-
-    font-family: Consolas, monospace;
-
-    color: #d1d5db;
-
+    border-radius: 8px;
+    margin-bottom: 15px;
     line-height: 1.8;
+    border-left: 5px solid #38bdf8;
+}
 
+.densityStatus {
+    background: #111827;
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    line-height: 1.6;
+    border-left: 5px solid #38bdf8;
+    font-size: 14px;
+}
+
+.densityInputRow {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.densityInputRow input {
+    flex: 1;
+    min-width: 200px;
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #f3f4f6;
+    font-size: 15px;
+}
+
+.densityInputRow button {
+    background: #38bdf8;
+    color: #111827;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.densityInputRow button:hover {
+    background: #7dd3fc;
+}
+
+#densityResult {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #9ca3af;
+}
+
+#densityResult:empty {
+    margin-top: 0;
+}
+
+.mileageNote {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.verdict-good {
+    background: rgba(34, 197, 94, .12);
+    border: 2px solid #22c55e;
+}
+
+.verdict-suspect {
+    background: rgba(234, 179, 8, .12);
+    border: 2px solid #eab308;
+}
+
+.verdict-bad {
+    background: rgba(239, 68, 68, .12);
+    border: 2px solid #ef4444;
+}
+
+.verdict-unknown {
+    background: #111827;
+    border: 2px solid #4b5563;
+}
+
+.verdict-good-text    { color: #22c55e; font-weight: bold; }
+.verdict-suspect-text { color: #eab308; font-weight: bold; }
+.verdict-bad-text     { color: #ef4444; font-weight: bold; }
+.verdict-unknown-text { color: #9ca3af; }
+
+#aiAnomalies {
+    display: none;
+    background: rgba(239, 68, 68, .12);
+    border: 1px solid #ef4444;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    line-height: 1.6;
 }
 
 /* ==========================================================
@@ -360,7 +573,7 @@ tbody tr:hover {
 
 @media (max-width:900px) {
 
-    .tableWrapper {
+    .setupAndResultGrid {
 
         grid-template-columns: 1fr;
 
@@ -376,7 +589,7 @@ tbody tr:hover {
 
     }
 
-    #connectionBar {
+    header {
 
         flex-direction: column;
 

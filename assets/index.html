@@ -17,9 +17,7 @@
 
 <header>
 
-    <h1>Fuel Quality Monitoring System</h1>
-
-    <div id="connectionBar">
+    <div class="headerSide">
 
         <span id="connectionStatus">
             ● Connected
@@ -28,6 +26,12 @@
         <span id="heartbeatValue">
             HB : --
         </span>
+
+    </div>
+
+    <h1>Fuel Quality Monitoring System</h1>
+
+    <div class="headerSide headerSideRight">
 
         <span id="lastUpdate">
             Last Update : --
@@ -39,59 +43,205 @@
 
 
 <!-- ===================================================== -->
-<!-- LIVE STATUS CARDS                                     -->
+<!-- SETUP (LEFT) + RESULT (RIGHT)                          -->
 <!-- ===================================================== -->
 
-<section class="cardContainer">
+<div class="setupAndResultGrid">
 
-    <div class="card">
+    <div class="setupColumn">
 
-        <h3>Ethanol</h3>
+        <!-- STEP 1 — MEASURED DENSITY (USER INPUT) -->
 
-        <div class="value" id="ethanolValue">-- %</div>
+        <section class="aiSection compactSection">
+
+            <h2>Step 1: Enter Your Fuel's Density</h2>
+
+            <div class="densityInputRow">
+
+                <input type="number" id="densityInput" step="0.1"
+                       placeholder="e.g. 751.2 (kg/m³, typical range 725-775)">
+
+                <button id="densitySubmitBtn" onclick="submitDensity()">
+                    Submit
+                </button>
+
+            </div>
+
+            <div id="densityStatus" class="captureMeta">
+                No density entered yet.
+            </div>
+
+            <div id="densityResult" class="captureMeta"></div>
+
+        </section>
+
+        <!-- STEP 2 — BUTTON CAPTURE -->
+
+        <section class="aiSection compactSection">
+
+            <h2>Step 2: Take a Reading</h2>
+
+            <div class="captureMeta">
+                Tip: if you just started pouring fuel, wait about 10
+                seconds first. Pressing "Capture Now" mid-pour can
+                catch the fuel before it settles and give an
+                unreliable reading.
+            </div>
+
+            <div class="densityInputRow">
+
+                <button id="captureNowBtn" onclick="triggerCapture()">
+                    Capture Now
+                </button>
+
+            </div>
+
+            <div id="captureStatus" class="captureMeta">
+                No reading yet.
+            </div>
+
+            <div id="captureLastUpdate" class="captureMeta"></div>
+
+            <div id="captureTriggerResult" class="captureMeta"></div>
+
+            <details id="captureDetails">
+
+                <summary>Show the 10 individual readings</summary>
+
+                <table id="captureTable">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>#</th>
+
+                            <th>Temp</th>
+
+                            <th>Ethanol</th>
+
+                            <th>Density</th>
+
+                            <th>Water</th>
+
+                            <th>Turbidity (Raw)</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        <tr><td>1</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+                        <tr><td>2</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+                        <tr><td>3</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+                        <tr><td>4</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+                        <tr><td>5</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+                        <tr><td>6</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+                        <tr><td>7</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+                        <tr><td>8</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+                        <tr><td>9</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+                        <tr><td>10</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+
+                    </tbody>
+
+                </table>
+
+            </details>
+
+        </section>
 
     </div>
 
-    <div class="card">
+    <div class="resultColumn">
 
-        <h3>Fuel Temp</h3>
+        <!-- AI FUEL QUALITY VERDICT -->
 
-        <div class="value" id="temperatureValue">-- °C</div>
+        <section class="aiSection">
+
+            <h2>AI Fuel Quality Verdict</h2>
+
+            <div id="aiCard" class="verdict-unknown">
+
+                <div id="aiVerdict">WAITING…</div>
+
+                <div id="aiConfidence"></div>
+
+                <div id="aiProbs"></div>
+
+                <div id="aiBlend"></div>
+
+            </div>
+
+            <div id="aiAnomalies"></div>
+
+            <!-- The reading behind the verdict above, kept right next
+                 to the reasoning instead of further down the page, so
+                 the "why" is visible without scrolling. -->
+            <div class="cardContainer">
+
+                <div class="card">
+
+                    <h3>Ethanol</h3>
+
+                    <div class="value" id="ethanolValue">-- %</div>
+
+                </div>
+
+                <div class="card">
+
+                    <h3>Fuel Temp</h3>
+
+                    <div class="value" id="temperatureValue">-- °C</div>
+
+                </div>
+
+                <div class="card">
+
+                    <h3>Density</h3>
+
+                    <div class="value" id="densityValue">--</div>
+
+                </div>
+
+                <div class="card">
+
+                    <h3>Water In Fuel</h3>
+
+                    <div class="value" id="waterValue">--</div>
+
+                </div>
+
+                <div class="card">
+
+                    <h3>Turbidity</h3>
+
+                    <div class="value" id="turbidityValue">--</div>
+
+                </div>
+
+            </div>
+
+            <h3>Estimated Fuel Economy Impact</h3>
+
+            <div id="mileageCard">
+
+                Waiting for first verdict…
+
+            </div>
+
+        </section>
 
     </div>
 
-    <div class="card">
-
-        <h3>Density</h3>
-
-        <div class="value" id="densityValue">--</div>
-
-    </div>
-
-    <div class="card">
-
-        <h3>Water In Fuel</h3>
-
-        <div class="value" id="waterValue">--</div>
-
-    </div>
-
-    <div class="card">
-
-        <h3>Turbidity</h3>
-
-        <div class="value" id="turbidityValue">--</div>
-
-    </div>
-
-</section>
+</div>
 
 
 <!-- ===================================================== -->
 <!-- IMU                                                    -->
 <!-- ===================================================== -->
 
-<section class="imuSection">
+<!-- <section class="imuSection">
 
     <h2>Live Accelerometer</h2>
 
@@ -105,119 +255,50 @@
 
     <canvas id="gyroChart"></canvas>
 
-</section>
+</section> -->
 
 
 <!-- ===================================================== -->
-<!-- TABLES                                                 -->
+<!-- RAW SENSOR FEED (DIAGNOSTIC ONLY)                      -->
 <!-- ===================================================== -->
 
-<div class="tableWrapper">
+<div class="tablePanel">
 
-    <div class="tablePanel">
+    <h2>Live Sensor History <small>(background readings only, not used for your result)</small></h2>
 
-        <h2>Live Sensor History</h2>
-
-        <div id="liveStatus">
-            Waiting for first sensor reading...
-        </div>
-
-        <table id="sensorTable">
-
-            <thead>
-
-                <tr>
-
-                    <th>Timestamp</th>
-
-                    <th>Temp</th>
-
-                    <th>Ethanol</th>
-
-                    <th>Density</th>
-
-                    <th>Water</th>
-
-                    <th>Turbidity</th>
-
-                </tr>
-
-            </thead>
-
-            <tbody>
-
-            </tbody>
-
-        </table>
-
+    <div id="liveStatus">
+        Waiting for first sensor reading...
     </div>
 
+    <table id="sensorTable">
 
+        <thead>
 
-    <div class="tablePanel">
+            <tr>
 
-        <h2>Button Capture</h2>
+                <th>Timestamp</th>
 
-        <div id="captureStatus">
+                <th>Temp</th>
 
-            Press the button to record the average of the next 5 readings.
+                <th>Ethanol</th>
 
-        </div>
+                <th>Density</th>
 
-        <table id="captureTable">
+                <th>Water</th>
 
-            <thead>
+                <th>Turbidity (Raw)</th>
 
-                <tr>
+            </tr>
 
-                    <th>#</th>
+        </thead>
 
-                    <th>Temp</th>
+        <tbody>
 
-                    <th>Ethanol</th>
+        </tbody>
 
-                    <th>Density</th>
-
-                    <th>Water</th>
-
-                    <th>Turbidity</th>
-
-                </tr>
-
-            </thead>
-
-            <tbody>
-
-            </tbody>
-
-        </table>
-
-        <h3>Average</h3>
-
-        <div id="average">
-
-        </div>
-
-    </div>
+    </table>
 
 </div>
-
-
-<!-- ===================================================== -->
-<!-- EVENT LOG                                              -->
-<!-- ===================================================== -->
-
-<section class="eventSection">
-
-    <h2>System Events</h2>
-
-    <div id="eventLog">
-
-        System started...
-
-    </div>
-
-</section>
 
 
 <!-- ===================================================== -->

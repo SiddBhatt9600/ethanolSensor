@@ -8,13 +8,6 @@ import zoneinfo
 from collections import deque
 from datetime import datetime
 
-
-###############################################################
-#
-# Configuration
-#
-###############################################################
-
 BUFFER_DURATION_SECONDS = 30 * 60
 SAMPLE_INTERVAL = 0.1            # 100 ms
 MAX_BUFFER_SIZE = int(BUFFER_DURATION_SECONDS / SAMPLE_INTERVAL)
@@ -24,49 +17,28 @@ JSON_WRITE_INTERVAL = 30         # seconds
 
 class ImuManager:
 
-    ###########################################################
-    #
-    # Constructor
-    #
-    ###########################################################
-
     def __init__(self, logger, ui=None):
         self.logger = logger
         self.ui = ui
-
         self._running = False
         self._thread = None
         self._lock = threading.Lock()
 
-        #
         # Circular RAM buffer
-        #
         self.samples = deque(maxlen=MAX_BUFFER_SIZE)
 
-        #
         # Statistics
-        #
         self.total_samples = 0
 
         self.last_write = time.time()
 
-    ###########################################################
-    #
-    # Helpers
-    #
-    ###########################################################
-
+    # Timestamp helper
     def timestamp(self):
         return datetime.now(
             zoneinfo.ZoneInfo("Asia/Kolkata")
         ).isoformat()
 
-    ###########################################################
-    #
     # JSON Writer
-    #
-    ###########################################################
-
     def write_json(self):
         with self._lock:
             history = list(self.samples)
@@ -74,25 +46,10 @@ class ImuManager:
         with open("imu_history.json", "w") as fp:
             json.dump(history, fp, indent=4)
 
-    ###########################################################
-    #
     # Main Recording API
-    #
-    ###########################################################
-
-    def record(
-        self,
-        ax,
-        ay,
-        az,
-        gx,
-        gy,
-        gz
-    ):
-
+    def record(self,ax, ay, az, gx, gy, gz):
         sample = {
             "timestamp": self.timestamp(),
-        
             "epoch": time.time(),
         
             "ax": int(ax),
@@ -108,25 +65,17 @@ class ImuManager:
             self.samples.append(sample)
             self.total_samples += 1
 
-        #
         # Push to Web Dashboard
-        #
         if self.ui is not None:
             try:
                 self.ui.send_message(
                     "imu_sample",
                     sample
                 )
-
             except Exception:
                 pass
 
-    ###########################################################
-    #
     # APIs
-    #
-    ###########################################################
-
     def get_latest_samples(
         self,
         count=200
@@ -160,12 +109,10 @@ class ImuManager:
 
         def stats(values):
             avg = sum(values) / len(values)
-
             rms = math.sqrt(
                 sum(v * v for v in values) /
                 len(values)
             )
-
             return {
                 "min": min(values),
                 "max": max(values),
@@ -187,7 +134,6 @@ class ImuManager:
                 "y": stats(gy),
                 "z": stats(gz)
             }
-
         }
 
     ###########################################################
@@ -200,21 +146,14 @@ class ImuManager:
         with open("imu_history.json", "w") as fp:
             json.dump([], fp, indent=4)
 
-    ###########################################################
-    #
     # Background Worker
-    #
-    ###########################################################
-    
     def _worker(self):
         self.logger.info("ImuManager worker started.")
-    
         while self._running:
             try:
                 now = time.time()
                 #
                 # Flush RAM buffer to disk every 30 seconds
-                #
                 if (now - self.last_write) >= JSON_WRITE_INTERVAL:
                     self.write_json()
                     self.last_write = now
@@ -222,10 +161,8 @@ class ImuManager:
                         f"IMU Buffer: {len(self.samples)}/{MAX_BUFFER_SIZE} "
                         f"(Total Samples: {self.total_samples})"
                     )
-    
-                #
+
                 # Sleep to avoid busy waiting
-                #
                 time.sleep(1)
     
             except Exception as e:
@@ -233,9 +170,7 @@ class ImuManager:
                     f"ImuManager Worker Error: {e}"
                 )
     
-        #
         # Flush remaining samples before exiting
-        #
         self.logger.info(
             "Writing remaining IMU samples before shutdown."
         )
@@ -246,12 +181,7 @@ class ImuManager:
             "ImuManager worker stopped."
         )
     
-    ###########################################################
-    #
     # Lifecycle
-    #
-    ###########################################################
-    
     def start(self):
         if self._running:
             return
@@ -259,10 +189,8 @@ class ImuManager:
         self.logger.info(
             "Starting ImuManager..."
         )
-    
-        #
+
         # Fresh start
-        #
         self.clear_history()
         self.last_write = time.time()
         self._running = True
@@ -271,42 +199,27 @@ class ImuManager:
             name="ImuManager",
             daemon=True
         )
-    
         self._thread.start()
     
-    ###########################################################
-    
     def stop(self):
-    
         self.logger.info(
             "Stopping ImuManager..."
         )
-    
+
         self._running = False
-        if (
-            self._thread is not None
-            and
-            threading.current_thread() != self._thread
-        ):
-    
+        if ( self._thread is not None and \
+            threading.current_thread() != self._thread):
             self._thread.join()
     
         self._thread = None
     
-        #
         # Final write
-        #
         self.write_json()
     
         self.logger.info(
             "ImuManager stopped."
         )
-    
-    ###########################################################
-    #
     # Optional Export Helpers
-    #
-    ###########################################################
     
     def export_json(self, filename):
         with self._lock:
@@ -319,10 +232,8 @@ class ImuManager:
     
     def export_csv(self, filename):
         import csv
-    
         with self._lock:
             data = list(self.samples)
-    
         if len(data) == 0:
             return
     
@@ -341,7 +252,6 @@ class ImuManager:
     
             for sample in data:
                 writer.writerow([
-    
                     sample["timestamp"],
     
                     sample["ax"],
@@ -351,7 +261,6 @@ class ImuManager:
                     sample["gx"],
                     sample["gy"],
                     sample["gz"]
-    
                 ])
     
         self.logger.info(
