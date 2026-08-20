@@ -44,6 +44,12 @@ class HbManager:
         with open(filename, "w") as f:
             json.dump(history, f, indent=4)
 
+    def get_status(self):
+        return {
+            "heartbeat": self.LAST_RESPONSE,
+            "missed": self.MISSED_HB
+        }
+
     def get_hb_state(self):
         try:
             data = self.bridge.call("getHbState")

@@ -1,0 +1,16 @@
+Test accuracy: 0.9527
+
+Confusion matrix (rows=true, cols=pred):
+[[1443    4   53]
+ [   5 1482   13]
+ [ 119   19 1362]]
+
+              precision    recall  f1-score   support
+
+        GOOD       0.92      0.96      0.94      1500
+     SUSPECT       0.98      0.99      0.99      1500
+ ADULTERATED       0.95      0.91      0.93      1500
+
+    accuracy                           0.95      4500
+   macro avg       0.95      0.95      0.95      4500
+weighted avg       0.95      0.95      0.95      4500

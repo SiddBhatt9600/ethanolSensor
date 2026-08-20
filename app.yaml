@@ -1,5 +1,6 @@
-name: ethanolSensor
+name: ethAi2
 description: ""
 ports: []
-bricks: []
+bricks:
+- arduino:web_ui: {}
 icon: 🗿
